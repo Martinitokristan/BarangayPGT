@@ -1,0 +1,24 @@
+// ==========================================================
+// Cards
+// ==========================================================
+
+.card {
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    box-shadow: $shadow;
+    border: 1px solid $border-color;
+    overflow: hidden;
+    transition: box-shadow $transition;
+
+    &:hover {
+        box-shadow: $shadow-md;
+    }
+}
+
+.panel {
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    padding: $space-6;
+    box-shadow: $shadow;
+    border: 1px solid $border-color;
+}

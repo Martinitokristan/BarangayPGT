@@ -1,0 +1,72 @@
+// ==========================================================
+// Auth Pages (Login / Register)
+// ==========================================================
+
+.auth-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - #{$navbar-height} - #{$space-12});
+    padding: $space-4;
+}
+
+.auth-card {
+    background-color: $bg-white;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-xl;
+    padding: $space-10;
+    width: 100%;
+    max-width: 440px;
+    border: 1px solid $border-color;
+
+    @media (max-width: $bp-sm) {
+        padding: $space-6;
+    }
+}
+
+.auth-card-wide {
+    max-width: 640px;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: $space-8;
+
+    .auth-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: $space-3;
+    }
+
+    h1 {
+        font-size: $font-size-2xl;
+        margin-bottom: $space-2;
+        color: $text-primary;
+    }
+
+    p {
+        color: $text-muted;
+        font-size: $font-size-sm;
+    }
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: $space-6;
+    padding-top: $space-6;
+    border-top: 1px solid $border-color;
+
+    p {
+        color: $text-muted;
+        font-size: $font-size-sm;
+    }
+
+    a {
+        font-weight: 600;
+        color: $primary;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}

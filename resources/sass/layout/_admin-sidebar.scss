@@ -1,0 +1,381 @@
+// ==========================================================
+// Universal Sidebar Layout
+// ==========================================================
+
+$sidebar-width: 260px;
+$sidebar-collapsed-width: 72px;
+$topbar-height: 56px;
+$sidebar-bg: #0f172a;
+$sidebar-hover: rgba(255, 255, 255, 0.06);
+$sidebar-active: rgba(37, 99, 235, 0.2);
+$sidebar-active-border: $primary;
+$sidebar-text: rgba(255, 255, 255, 0.65);
+$sidebar-text-hover: rgba(255, 255, 255, 0.95);
+$sidebar-section-text: rgba(255, 255, 255, 0.35);
+
+// Admin Layout Container
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: $bg-body;
+}
+
+// Sidebar
+.admin-sidebar {
+    width: $sidebar-width;
+    background: $sidebar-bg;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 200;
+    transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+
+    @media (max-width: $bp-md) {
+        transform: translateX(-100%);
+        width: $sidebar-width;
+
+        &.mobile-open {
+            transform: translateX(0);
+        }
+    }
+}
+
+// Overlay for mobile
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 199;
+    backdrop-filter: blur(2px);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+// Sidebar Header
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $space-4 $space-4;
+    height: $topbar-height;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    min-width: 0;
+    text-decoration: none;
+}
+
+.sidebar-brand-icon {
+    font-size: 1.5rem;
+    color: $primary;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.sidebar-brand-text {
+    color: $text-white;
+    font-weight: 700;
+    font-size: $font-size-sm;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.mobile-only {
+    display: none;
+
+    @media (max-width: $bp-md) {
+        display: flex;
+    }
+}
+
+// Sidebar Navigation
+.sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: $space-3 $space-2;
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+    }
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+}
+
+.sidebar-section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $sidebar-section-text;
+    padding: $space-1 $space-3;
+    margin-bottom: $space-1;
+}
+
+// Sidebar Links
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-3 $space-3;
+    border-radius: $radius;
+    color: $sidebar-text;
+    text-decoration: none;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    transition: all $transition-fast;
+    position: relative;
+    white-space: nowrap;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+
+    .sidebar-link-icon {
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 24px;
+    }
+
+    .sidebar-link-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &:hover {
+        background: $sidebar-hover;
+        color: $sidebar-text-hover;
+    }
+
+    &.active {
+        background: $sidebar-active;
+        color: $text-white;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: $space-2;
+            bottom: $space-2;
+            width: 3px;
+            background: $sidebar-active-border;
+            border-radius: 0 3px 3px 0;
+        }
+    }
+}
+
+.sidebar-badge {
+    background: $danger;
+    color: $text-white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    padding: 0 $space-1;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+// Sidebar Footer
+.sidebar-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: $space-3 $space-2;
+    flex-shrink: 0;
+}
+
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-2 $space-3;
+    margin-bottom: $space-2;
+}
+
+.sidebar-user-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: $radius-full;
+    background: linear-gradient(135deg, $primary, lighten($primary, 15%));
+    color: $text-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: $font-size-sm;
+    flex-shrink: 0;
+}
+
+.sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-user-name {
+    color: $text-white;
+    font-weight: 600;
+    font-size: $font-size-sm;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+    color: $sidebar-section-text;
+    font-size: $font-size-xs;
+}
+
+.sidebar-logout {
+    color: rgba(255, 255, 255, 0.5) !important;
+
+    &:hover {
+        color: $danger !important;
+        background: rgba($danger, 0.1) !important;
+    }
+}
+
+// Main Content Area
+.admin-main {
+    flex: 1;
+    margin-left: $sidebar-width;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+
+    @media (max-width: $bp-md) {
+        margin-left: 0;
+    }
+}
+
+// Admin Topbar
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    height: $topbar-height;
+    padding: 0 $space-6;
+    background: $bg-white;
+    border-bottom: 1px solid $border-color;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+
+    @media (max-width: $bp-sm) {
+        padding: 0 $space-4;
+    }
+}
+
+.topbar-hamburger {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: $space-2;
+    border-radius: $radius;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+
+    svg {
+        font-size: 1.35rem;
+    }
+
+    &:hover {
+        background: $bg-light;
+        color: $text-primary;
+    }
+}
+
+.topbar-back {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    text-decoration: none;
+    padding: $space-2 $space-3;
+    border-radius: $radius;
+    transition: all $transition-fast;
+    margin-left: auto;
+
+    svg {
+        font-size: 1.1em;
+    }
+
+    &:hover {
+        background: $bg-light;
+        color: $primary;
+    }
+}
+
+// Admin content wrapper
+.admin-content {
+    flex: 1;
+    padding: $space-5 $space-6;
+    width: 100%;
+
+    @media (max-width: $bp-sm) {
+        padding: $space-3;
+    }
+}
+
+// Admin-specific sidebar link accent
+.sidebar-admin-link {
+    .sidebar-link-icon {
+        color: rgba(251, 191, 36, 0.8);
+    }
+
+    &.active .sidebar-link-icon {
+        color: #fbbf24;
+    }
+}

@@ -1,0 +1,137 @@
+// ==========================================================
+// Notifications Page
+// ==========================================================
+
+.notifications-container {
+    max-width: $container-max;
+    margin: 0 auto;
+}
+
+.notifications-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $space-6;
+
+    h2 {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+
+        svg {
+            color: $warning;
+        }
+    }
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+}
+
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    padding: $space-4 $space-5;
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    border: 1px solid $border-color;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover {
+        box-shadow: $shadow-md;
+        transform: translateY(-1px);
+    }
+
+    &.unread {
+        background-color: lighten($primary-light, 3%);
+        border-left: 4px solid $primary;
+    }
+
+    &.notification-urgent {
+        border-left: 4px solid $danger;
+
+        &.unread {
+            background-color: lighten($danger-light, 2%);
+        }
+    }
+}
+
+.notification-icon {
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: $bg-light;
+    border-radius: $radius-full;
+    flex-shrink: 0;
+
+    svg {
+        font-size: 1.2rem;
+    }
+
+    &.notif-icon-urgent {
+        background-color: rgba($danger, 0.12);
+        color: $danger;
+    }
+
+    &.notif-icon-post {
+        background-color: rgba($primary, 0.12);
+        color: $primary;
+    }
+
+    &.notif-icon-status {
+        background-color: rgba($info, 0.12);
+        color: $info;
+    }
+
+    &.notif-icon-comment {
+        background-color: rgba($success, 0.12);
+        color: $success;
+    }
+
+    &.notif-icon-admin {
+        background-color: rgba($warning, 0.12);
+        color: darken($warning, 10%);
+    }
+}
+
+.notification-content {
+    flex: 1;
+    min-width: 0;
+
+    strong {
+        display: block;
+        font-size: $font-size-sm;
+        color: $text-primary;
+        margin-bottom: $space-1;
+    }
+
+    p {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+        margin-bottom: $space-1;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .notification-time {
+        font-size: $font-size-xs;
+        color: $text-muted;
+        display: flex;
+        align-items: center;
+        gap: $space-1;
+
+        svg {
+            font-size: 0.9em;
+        }
+    }
+}

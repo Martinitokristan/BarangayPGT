@@ -1,0 +1,911 @@
+// ==========================================================
+// Post Card
+// ==========================================================
+
+.post-card {
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    box-shadow: $shadow;
+    border: 1px solid $border-color;
+    overflow: hidden;
+    transition: box-shadow $transition;
+
+    &:hover {
+        box-shadow: $shadow-md;
+    }
+}
+
+.post-urgent {
+    border-color: rgba($danger, 0.3);
+    box-shadow:
+        $shadow,
+        0 0 0 1px rgba($danger, 0.1);
+
+    &:hover {
+        box-shadow:
+            $shadow-md,
+            0 0 0 1px rgba($danger, 0.2);
+    }
+}
+
+.urgent-banner {
+    background: linear-gradient(135deg, $danger, darken($danger, 10%));
+    color: $text-white;
+    text-align: center;
+    padding: $space-2 $space-4;
+    font-size: $font-size-xs;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-2;
+    animation: urgentPulse 3s infinite;
+
+    svg {
+        font-size: 1em;
+    }
+}
+
+@keyframes urgentPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.85;
+    }
+}
+
+.post-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: $space-5 $space-5 0;
+    gap: $space-3;
+
+    @media (max-width: $bp-sm) {
+        flex-direction: column;
+    }
+}
+
+.post-header-right {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+}
+
+.post-author {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: $radius-full;
+        background: linear-gradient(135deg, $primary, lighten($primary, 15%));
+        color: $text-white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: $font-size-lg;
+        flex-shrink: 0;
+    }
+
+    strong {
+        font-size: $font-size-sm;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0;
+        color: $text-primary;
+    }
+
+    .author-purpose-tag {
+        font-weight: 500;
+        font-size: $font-size-xs;
+        color: $text-muted;
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        margin-left: 2px;
+
+        svg {
+            font-size: 0.85em;
+        }
+    }
+
+    .post-time {
+        font-size: $font-size-xs;
+        color: $text-muted;
+        display: flex;
+        align-items: center;
+        gap: $space-1;
+
+        svg {
+            font-size: 0.9em;
+        }
+    }
+
+    .time-urgent-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        color: $danger;
+        font-weight: 700;
+        font-size: $font-size-xs;
+        margin-left: $space-2;
+
+        svg {
+            font-size: 1em;
+        }
+    }
+}
+
+.avatar-urgent {
+    background: linear-gradient(
+        135deg,
+        $danger,
+        darken($danger, 10%)
+    ) !important;
+    animation: urgentPulse 2s ease-in-out infinite;
+}
+
+@keyframes urgentPulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba($danger, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba($danger, 0);
+    }
+}
+
+.post-meta {
+    display: flex;
+    gap: $space-2;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+// Three-dot menu
+.post-menu-wrapper {
+    position: relative;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    padding: $space-2;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+
+    svg {
+        font-size: 1.25rem;
+    }
+
+    &:hover {
+        background-color: $bg-light;
+        color: $text-primary;
+    }
+}
+
+.post-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    border-radius: $radius;
+    box-shadow: $shadow-lg;
+    min-width: 180px;
+    z-index: 100;
+    overflow: hidden;
+    animation: menuFadeIn 0.15s ease;
+
+    button {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        width: 100%;
+        padding: $space-3 $space-4;
+        background: none;
+        border: none;
+        font-size: $font-size-sm;
+        color: $text-primary;
+        cursor: pointer;
+        transition: background-color $transition-fast;
+
+        svg {
+            font-size: 1.1em;
+            color: $text-secondary;
+        }
+
+        &:hover {
+            background-color: $bg-light;
+        }
+
+        &.menu-danger {
+            color: $danger;
+
+            svg {
+                color: $danger;
+            }
+
+            &:hover {
+                background-color: $danger-light;
+            }
+        }
+    }
+}
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.post-body {
+    padding: $space-4 $space-5;
+
+    .post-purpose {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-2;
+        font-size: $font-size-xs;
+        font-weight: 600;
+        color: $text-secondary;
+        background-color: $bg-light;
+        padding: $space-1 $space-3;
+        border-radius: $radius-full;
+        margin-bottom: $space-3;
+
+        svg {
+            font-size: 1em;
+        }
+    }
+
+    h3 {
+        margin-bottom: $space-2;
+        font-size: $font-size-lg;
+
+        a {
+            color: $text-primary;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $primary;
+            }
+        }
+    }
+
+    p {
+        font-size: $font-size-sm;
+        line-height: 1.7;
+        color: $text-secondary;
+    }
+
+    .post-image {
+        margin-top: $space-4;
+        border-radius: $radius;
+        border: 1px solid $border-color;
+        max-height: 400px;
+        object-fit: cover;
+        width: 100%;
+    }
+}
+
+.admin-response {
+    margin: 0 $space-5 $space-4;
+    padding: $space-4;
+    background-color: lighten($primary-light, 3%);
+    border-radius: $radius;
+    border-left: 4px solid $primary;
+
+    strong {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        font-size: $font-size-sm;
+        color: $primary-dark;
+        margin-bottom: $space-2;
+
+        svg {
+            font-size: 1.1em;
+        }
+    }
+
+    p {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+    }
+}
+
+// Reaction + Comment Stats Row (Facebook-style)
+.post-stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: $space-2 $space-5;
+    border-top: 1px solid $border-light;
+}
+
+.reaction-stats {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+
+    .reaction-stat-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .reaction-stat-emoji {
+        font-size: 1.1rem;
+        line-height: 1;
+    }
+
+    .reaction-stat-count {
+        font-size: $font-size-xs;
+        font-weight: 600;
+        color: $text-secondary;
+    }
+}
+
+.comment-stat-count {
+    background: none;
+    border: none;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover {
+        color: $text-primary;
+        text-decoration: underline;
+    }
+}
+
+// Facebook-style Action Bar
+.post-action-bar {
+    display: flex;
+    align-items: center;
+    border-top: 1px solid $border-light;
+    padding: $space-1 $space-3;
+
+    .action-bar-item {
+        position: relative;
+        flex: 1;
+    }
+}
+
+.action-bar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-2;
+    width: 100%;
+    padding: $space-3 $space-4;
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: $radius;
+    transition: all $transition-fast;
+
+    svg {
+        font-size: 1.25em;
+    }
+
+    &:hover {
+        background-color: $bg-light;
+        color: $text-primary;
+    }
+
+    &.reacted {
+        font-weight: 600;
+    }
+
+    .action-bar-emoji {
+        font-size: 1.2rem;
+        line-height: 1;
+    }
+}
+
+// Hover Reaction Picker
+.reaction-trigger {
+    position: relative;
+}
+
+.reaction-picker {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: $bg-white;
+    border-radius: $radius-full;
+    box-shadow: $shadow-lg;
+    border: 1px solid $border-color;
+    display: flex;
+    gap: 0;
+    padding: $space-2 $space-3;
+    z-index: 200;
+    animation: reactionPickerIn 0.2s cubic-bezier(0.21, 1.02, 0.73, 1);
+
+    &::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid $bg-white;
+    }
+}
+
+.reaction-picker-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: $space-2 $space-2;
+    border-radius: $radius;
+    transition: all 0.15s ease;
+
+    &:hover {
+        transform: scale(1.4) translateY(-6px);
+
+        .reaction-picker-label {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    &.active {
+        .reaction-picker-emoji {
+            transform: scale(1.1);
+        }
+    }
+}
+
+.reaction-picker-emoji {
+    font-size: 1.75rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.reaction-picker-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-transform: capitalize;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+@keyframes reactionPickerIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.7) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1) translateY(0);
+    }
+}
+
+// Share Dropdown
+.share-trigger {
+    position: relative;
+}
+
+.share-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    background: $bg-white;
+    border-radius: $radius;
+    box-shadow: $shadow-lg;
+    border: 1px solid $border-color;
+    min-width: 200px;
+    z-index: 200;
+    overflow: hidden;
+    animation: menuFadeIn 0.15s ease;
+
+    &::after {
+        content: "";
+        position: absolute;
+        bottom: -8px;
+        right: 20px;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid $bg-white;
+    }
+
+    button {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        width: 100%;
+        padding: $space-3 $space-4;
+        background: none;
+        border: none;
+        font-size: $font-size-sm;
+        color: $text-primary;
+        cursor: pointer;
+        transition: background-color $transition-fast;
+
+        svg {
+            font-size: 1.15em;
+            color: $text-secondary;
+        }
+
+        &:hover {
+            background-color: $bg-light;
+        }
+
+        // Social colors on hover
+        &:nth-child(2):hover svg {
+            color: #1877f2;
+        }
+        &:nth-child(3):hover svg {
+            color: #0084ff;
+        }
+        &:nth-child(4):hover svg {
+            color: #25d366;
+        }
+        &:nth-child(5):hover svg {
+            color: #1da1f2;
+        }
+    }
+}
+
+// Comments
+.comments-section {
+    border-top: 1px solid $border-light;
+    padding: $space-4 $space-5;
+    background-color: $bg-light;
+}
+
+.comment-form {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    margin-bottom: $space-4;
+
+    .comment-form-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: $radius-full;
+        background: linear-gradient(135deg, $primary, lighten($primary, 15%));
+        color: $text-white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: $font-size-sm;
+        flex-shrink: 0;
+    }
+
+    input {
+        flex: 1;
+        padding: $space-3 $space-4;
+        border: 2px solid $border-color;
+        border-radius: $radius-full;
+        outline: none;
+        font-size: $font-size-sm;
+        background: $bg-white;
+        transition: border-color $transition-fast;
+
+        &:focus {
+            border-color: $primary;
+        }
+    }
+}
+
+.comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+}
+
+// Facebook-style comment item
+.comment-item {
+    display: flex;
+    gap: $space-2;
+    align-items: flex-start;
+
+    &.comment-reply {
+        margin-left: $space-6;
+        margin-top: $space-2;
+    }
+}
+
+.comment-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-full;
+    background: linear-gradient(
+        135deg,
+        lighten($primary, 20%),
+        lighten($primary, 30%)
+    );
+    color: $text-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: $font-size-xs;
+    flex-shrink: 0;
+    margin-top: 2px;
+
+    .comment-reply & {
+        width: 26px;
+        height: 26px;
+        font-size: 0.65rem;
+    }
+}
+
+.comment-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.comment-bubble {
+    background-color: $bg-white;
+    padding: $space-2 $space-3;
+    border-radius: 18px;
+    display: inline-block;
+    max-width: 100%;
+    border: 1px solid $border-light;
+
+    .comment-bubble-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-2;
+
+        strong {
+            font-size: $font-size-xs;
+            color: $text-primary;
+        }
+    }
+
+    p {
+        font-size: $font-size-sm;
+        color: $text-secondary;
+        margin: 0;
+        word-wrap: break-word;
+    }
+}
+
+// Comment 3-dot menu
+.comment-menu-wrapper {
+    position: relative;
+}
+
+.comment-menu-btn {
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all $transition-fast;
+
+    svg {
+        font-size: 0.85rem;
+    }
+
+    &:hover {
+        background-color: rgba($text-muted, 0.1);
+        color: $text-primary;
+    }
+
+    .comment-bubble:hover & {
+        opacity: 1;
+    }
+}
+
+.comment-menu-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: $bg-white;
+    border: 1px solid $border-color;
+    border-radius: $radius;
+    box-shadow: $shadow-lg;
+    min-width: 140px;
+    z-index: 100;
+    overflow: hidden;
+    animation: menuFadeIn 0.15s ease;
+
+    button {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        width: 100%;
+        padding: $space-2 $space-3;
+        background: none;
+        border: none;
+        font-size: $font-size-xs;
+        color: $text-primary;
+        cursor: pointer;
+        transition: background-color $transition-fast;
+
+        svg {
+            font-size: 0.9em;
+            color: $text-secondary;
+        }
+
+        &:hover {
+            background-color: $bg-light;
+        }
+
+        &.menu-danger {
+            color: $danger;
+            svg {
+                color: $danger;
+            }
+            &:hover {
+                background-color: $danger-light;
+            }
+        }
+    }
+}
+
+// Comment edit form
+.comment-edit-form {
+    margin-top: $space-1;
+
+    input {
+        width: 100%;
+        padding: $space-2 $space-3;
+        font-size: $font-size-sm;
+        border: 1px solid $primary;
+        border-radius: $radius;
+        outline: none;
+    }
+
+    .comment-edit-actions {
+        display: flex;
+        gap: $space-2;
+        margin-top: $space-1;
+
+        button {
+            background: none;
+            border: none;
+            font-size: $font-size-xs;
+            color: $text-secondary;
+            cursor: pointer;
+            padding: 0;
+
+            &:hover {
+                color: $text-primary;
+            }
+
+            &.save {
+                color: $primary;
+                font-weight: 600;
+                &:hover {
+                    color: darken($primary, 10%);
+                }
+            }
+        }
+    }
+}
+
+// Comment actions (Like · Reply · time)
+.comment-actions-row {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: 2px $space-3;
+}
+
+.comment-action-link {
+    background: none;
+    border: none;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0;
+    transition: color $transition-fast;
+
+    &:hover {
+        text-decoration: underline;
+        color: $text-primary;
+    }
+
+    &.liked {
+        color: $primary;
+    }
+}
+
+.comment-timestamp {
+    font-size: $font-size-xs;
+    color: $text-muted;
+}
+
+// Reply form
+.reply-form {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-top: $space-2;
+
+    input {
+        flex: 1;
+        padding: $space-2 $space-3;
+        border: 1px solid $border-color;
+        border-radius: $radius-full;
+        outline: none;
+        font-size: $font-size-xs;
+        background: $bg-white;
+
+        &:focus {
+            border-color: $primary;
+        }
+    }
+
+    button {
+        flex-shrink: 0;
+    }
+}
+
+// Show replies toggle
+.show-replies-btn {
+    background: none;
+    border: none;
+    font-size: $font-size-xs;
+    font-weight: 600;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: $space-1 $space-3;
+    display: flex;
+    align-items: center;
+    gap: $space-1;
+    transition: color $transition-fast;
+
+    svg {
+        font-size: 0.85em;
+    }
+
+    &:hover {
+        color: $text-primary;
+    }
+}
+
+.no-comments {
+    text-align: center;
+    color: $text-muted;
+    font-size: $font-size-sm;
+    padding: $space-3 0;
+}
