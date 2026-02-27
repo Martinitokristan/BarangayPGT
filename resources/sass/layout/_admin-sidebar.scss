@@ -365,7 +365,7 @@ $sidebar-section-text: rgba(255, 255, 255, 0.35);
     width: 100%;
 
     @media (max-width: $bp-sm) {
-        padding: $space-3;
+        padding: $space-3 0;
     }
 }
 

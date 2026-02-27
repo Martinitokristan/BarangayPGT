@@ -1,3 +1,7 @@
+@use "sass:color";
+@import "../base/variables";
+@import "../base/utilities";
+
 // ==========================================================
 // Post Detail Page
 // ==========================================================
@@ -91,7 +95,7 @@
         flex: 1;
         font-size: $font-size-sm;
         font-weight: 600;
-        color: darken($success, 10%);
+        color: color.adjust($success, $lightness: -10%);
     }
 }
 

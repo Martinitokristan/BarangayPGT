@@ -30,4 +30,15 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+    ],
+
+    'iprog' => [
+        'api_token' => env('IPROG_SMS_API_TOKEN'),
+        'endpoint' => env('IPROG_SMS_ENDPOINT'),
+    ],
+
 ];

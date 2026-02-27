@@ -101,7 +101,7 @@ class CommentController extends Controller
         $likedBy = $comment->liked_by ?? [];
 
         if (in_array($userId, $likedBy)) {
-            $likedBy = array_values(array_filter($likedBy, fn($id) => $id !== $userId));
+            $likedBy = array_values(array_filter($likedBy, function($id) use ($userId) { return $id !== $userId; }));
         } else {
             $likedBy[] = $userId;
         }

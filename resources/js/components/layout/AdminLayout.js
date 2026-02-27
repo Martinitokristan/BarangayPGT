@@ -54,6 +54,11 @@ export default function AdminLayout({ children }) {
             icon: <HiClipboardList />,
             label: "Manage Posts",
         },
+        {
+            to: "/admin/sms",
+            icon: <HiBell />, // You can use a better SMS icon if available
+            label: "SMS Management",
+        },
     ];
 
     const quickLinks = [

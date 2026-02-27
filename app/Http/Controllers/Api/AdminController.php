@@ -16,30 +16,30 @@ class AdminController extends Controller
         $barangayId = $request->user()->barangay_id;
 
         $stats = [
-            'total_posts' => Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->count(),
-            'pending_posts' => Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->where('status', 'pending')->count(),
-            'in_progress_posts' => Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->where('status', 'in_progress')->count(),
-            'resolved_posts' => Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->where('status', 'resolved')->count(),
-            'urgent_posts' => Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->where('urgency_level', 'high')->where('status', '!=', 'resolved')->count(),
-            'total_residents' => User::where('role', 'resident')->when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))->count(),
+            'total_posts' => Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->count(),
+            'pending_posts' => Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->where('status', 'pending')->count(),
+            'in_progress_posts' => Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->where('status', 'in_progress')->count(),
+            'resolved_posts' => Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->where('status', 'resolved')->count(),
+            'urgent_posts' => Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->where('urgency_level', 'high')->where('status', '!=', 'resolved')->count(),
+            'total_residents' => User::where('role', 'resident')->when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })->count(),
             'total_barangays' => Barangay::count(),
         ];
 
         // Posts by purpose
-        $stats['posts_by_purpose'] = Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))
+        $stats['posts_by_purpose'] = Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })
             ->selectRaw('purpose, count(*) as count')
             ->groupBy('purpose')
             ->pluck('count', 'purpose');
 
         // Posts by urgency
-        $stats['posts_by_urgency'] = Post::when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))
+        $stats['posts_by_urgency'] = Post::when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })
             ->selectRaw('urgency_level, count(*) as count')
             ->groupBy('urgency_level')
             ->pluck('count', 'urgency_level');
 
         // Recent urgent posts
         $stats['recent_urgent_posts'] = Post::with('user')
-            ->when($barangayId, fn($q) => $q->where('barangay_id', $barangayId))
+            ->when($barangayId, function($q) use ($barangayId) { return $q->where('barangay_id', $barangayId); })
             ->where('urgency_level', 'high')
             ->where('status', '!=', 'resolved')
             ->orderBy('created_at', 'desc')

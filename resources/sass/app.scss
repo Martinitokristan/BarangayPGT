@@ -19,17 +19,13 @@
 @import "components/modal";
 @import "components/upload-progress";
 
+// Custom: Reaction Picker
+@import "components/reaction-picker";
+
 // Layout
 @import "layout/navbar";
 @import "layout/containers";
 @import "layout/admin-sidebar";
 
 // Pages
-@import "pages/auth";
-@import "pages/feed";
-@import "pages/post-card";
-@import "pages/post-detail";
-@import "pages/create-post";
-@import "pages/notifications";
-@import "pages/admin-dashboard";
-@import "pages/admin-posts";
+// Removed page-level imports. These are now imported in their respective JS files.

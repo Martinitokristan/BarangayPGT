@@ -1,3 +1,6 @@
+// Manual SCSS only. No imports.
+@use "sass:color";
+@use "../base/variables" as *;
 // ==========================================================
 // Admin Dashboard
 // ==========================================================
@@ -11,6 +14,7 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: $space-5;
+    margin-bottom: 32px; // manual value
     flex-wrap: wrap;
     gap: $space-3;
 
@@ -31,11 +35,12 @@
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: $space-4;
     margin-bottom: $space-5;
+    margin-bottom: 32px; // manual value
 }
 
 .stat-card {
     background-color: $bg-white;
-    border-radius: $radius-md;
+    border-radius: 8px; // manual value
     padding: $space-5;
     box-shadow: $shadow;
     border: 1px solid $border-color;
@@ -106,7 +111,7 @@
         background-color: $warning;
     }
     .stat-number {
-        color: darken($warning, 10%);
+        color: color.adjust($warning, $lightness: -10%);
     }
 }
 
@@ -204,22 +209,38 @@
 
     .breakdown-fill {
         height: 100%;
-        background: linear-gradient(90deg, $primary, lighten($primary, 10%));
+        background: linear-gradient(
+            90deg,
+            $primary,
+            color.adjust($primary, $lightness: 10%)
+        );
         border-radius: $radius-full;
         transition: width $transition-slow;
         min-width: 4px;
     }
 
     .urgency-fill-high {
-        background: linear-gradient(90deg, $danger, lighten($danger, 10%));
+        background: linear-gradient(
+            90deg,
+            $danger,
+            color.adjust($danger, $lightness: 10%)
+        );
     }
 
     .urgency-fill-medium {
-        background: linear-gradient(90deg, $warning, lighten($warning, 10%));
+        background: linear-gradient(
+            90deg,
+            $warning,
+            color.adjust($warning, $lightness: 10%)
+        );
     }
 
     .urgency-fill-low {
-        background: linear-gradient(90deg, $success, lighten($success, 10%));
+        background: linear-gradient(
+            90deg,
+            $success,
+            color.adjust($success, $lightness: 10%)
+        );
     }
 
     .breakdown-count {

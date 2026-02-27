@@ -1,9 +1,12 @@
+// Manual SCSS only. No imports.
+@use "sass:color";
+@use "../base/variables" as *;
 // ==========================================================
 // Notifications Page
 // ==========================================================
 
 .notifications-container {
-    max-width: $container-max;
+    max-width: 1200px; // manual value
     margin: 0 auto;
 }
 
@@ -35,9 +38,9 @@
     align-items: center;
     gap: $space-4;
     padding: $space-4 $space-5;
-    background-color: $bg-white;
-    border-radius: $radius-md;
-    border: 1px solid $border-color;
+    background-color: #fff; // manual value
+    border-radius: 8px; // manual value
+    border: 1px solid #e0e0e0; // manual value
     cursor: pointer;
     transition: all $transition-fast;
 
@@ -47,7 +50,7 @@
     }
 
     &.unread {
-        background-color: lighten($primary-light, 3%);
+        background-color: color.adjust($primary-light, $lightness: 3%);
         border-left: 4px solid $primary;
     }
 
@@ -55,7 +58,7 @@
         border-left: 4px solid $danger;
 
         &.unread {
-            background-color: lighten($danger-light, 2%);
+            background-color: color.adjust($danger-light, $lightness: 2%);
         }
     }
 }
@@ -97,7 +100,7 @@
 
     &.notif-icon-admin {
         background-color: rgba($warning, 0.12);
-        color: darken($warning, 10%);
+        color: color.adjust($warning, $lightness: -10%);
     }
 }
 

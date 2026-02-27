@@ -65,7 +65,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        
+        // If authenticated via Sanctum token
+        if ($user->currentAccessToken() && method_exists($user->currentAccessToken(), 'delete')) {
+            $user->currentAccessToken()->delete();
+        }
+
+        // If authenticated via session
+        Auth::guard('web')->logout();
 
         return response()->json(['message' => 'Logged out successfully']);
     }

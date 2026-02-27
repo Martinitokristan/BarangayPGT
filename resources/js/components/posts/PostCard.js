@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+// ...existing code...
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -19,20 +20,22 @@ import {
     HiExternalLink,
     HiReply,
 } from "react-icons/hi";
+import { RiAlarmWarningFill, RiShieldStarFill } from "react-icons/ri";
 import {
     FaFacebookF,
     FaFacebookMessenger,
-    FaTwitter,
     FaWhatsapp,
+    FaTwitter,
 } from "react-icons/fa";
-import { RiAlarmWarningFill, RiShieldStarFill } from "react-icons/ri";
+import "../../../sass/pages/_post-card.scss";
 
 const REACTION_CONFIG = {
-    like: { emoji: "\uD83D\uDC4D", label: "Like" },
-    support: { emoji: "\uD83E\uDD1D", label: "Support" },
-    urgent: { emoji: "\uD83D\uDEA8", label: "Urgent" },
-    sad: { emoji: "\uD83D\uDE22", label: "Sad" },
-    angry: { emoji: "\uD83D\uDE21", label: "Angry" },
+    like: { emoji: "👍", label: "Like", color: "#3b5998" },
+    love: { emoji: "❤️", label: "Love", color: "#e74c3c" },
+    haha: { emoji: "😆", label: "Haha", color: "#f1c40f" },
+    wow: { emoji: "😮", label: "Wow", color: "#f39c12" },
+    sad: { emoji: "😢", label: "Sad", color: "#3498db" },
+    angry: { emoji: "😡", label: "Angry", color: "#c0392b" },
 };
 
 const URGENCY_STYLES = {
@@ -41,18 +44,18 @@ const URGENCY_STYLES = {
     low: { label: "LOW", className: "urgency-low" },
 };
 
-const STATUS_LABELS = {
-    pending: "Pending",
-    in_progress: "In Progress",
-    resolved: "Resolved",
-};
-
 const PURPOSE_LABELS = {
     complaint: { icon: <HiClipboardList />, text: "Complaint" },
     problem: { icon: <HiExclamation />, text: "Problem" },
     emergency: { icon: <RiAlarmWarningFill />, text: "Emergency" },
     suggestion: { icon: <HiLightBulb />, text: "Suggestion" },
     general: { icon: <HiSpeakerphone />, text: "General" },
+};
+
+const STATUS_LABELS = {
+    pending: "Pending",
+    in_progress: "In Progress",
+    resolved: "Resolved",
 };
 
 /* ===================== Comment Item ===================== */
@@ -152,7 +155,7 @@ function CommentItem({
     const timeAgo = (date) => {
         const seconds = Math.floor((new Date() - new Date(date)) / 1000);
         if (seconds < 60) return "Just now";
-        const mins = Math.floor(seconds / 60);
+        const mins = Math.floor(seconds / 66);
         if (mins < 60) return `${mins}m`;
         const hrs = Math.floor(mins / 60);
         if (hrs < 24) return `${hrs}h`;
@@ -162,75 +165,84 @@ function CommentItem({
     };
 
     return (
-        <div className={`comment-item ${depth > 0 ? "comment-reply" : ""}`}>
-            <div className="comment-avatar">
-                {comment.user?.name?.charAt(0).toUpperCase()}
-            </div>
-            <div className="comment-content">
-                <div className="comment-bubble">
-                    <div className="comment-bubble-header">
-                        <strong>{comment.user?.name}</strong>
-                        {canManage && (
-                            <div className="comment-menu-wrapper" ref={menuRef}>
-                                <button
-                                    className="comment-menu-btn"
-                                    onClick={() => setShowMenu(!showMenu)}
-                                >
-                                    <HiDotsHorizontal />
-                                </button>
-                                {showMenu && (
-                                    <div className="comment-menu-dropdown">
-                                        {isOwner && (
-                                            <button
-                                                onClick={() => {
-                                                    setShowMenu(false);
-                                                    setEditing(true);
-                                                    setEditText(comment.body);
-                                                }}
-                                            >
-                                                <HiPencil /> Edit
-                                            </button>
-                                        )}
-                                        <button
-                                            className="menu-danger"
-                                            onClick={() => {
-                                                setShowMenu(false);
-                                                setShowDeleteModal(true);
-                                            }}
-                                        >
-                                            <HiTrash /> Delete
-                                        </button>
-                                    </div>
+        <div className={`post-card${depth > 0 ? " comment-reply" : ""}`}>
+            <div className="post-header">
+                <div className="post-avatar">
+                    {comment.user?.name?.charAt(0).toUpperCase()}
+                </div>
+                <div className="post-header-content">
+                    <span className="post-author">
+                        <Link
+                            to={`/users/${comment.user?.id}/profile`}
+                            className="author-link"
+                        >
+                            {comment.user?.name}
+                        </Link>
+                    </span>
+                    <div className="post-meta">
+                        {timeAgo(comment.created_at)}
+                    </div>
+                </div>
+                {canManage && (
+                    <div className="comment-menu-wrapper" ref={menuRef}>
+                        <button
+                            className="comment-menu-btn"
+                            onClick={() => setShowMenu(!showMenu)}
+                        >
+                            <HiDotsHorizontal />
+                        </button>
+                        {showMenu && (
+                            <div className="comment-menu-dropdown">
+                                {isOwner && (
+                                    <button
+                                        onClick={() => {
+                                            setShowMenu(false);
+                                            setEditing(true);
+                                            setEditText(comment.body);
+                                        }}
+                                    >
+                                        <HiPencil /> Edit
+                                    </button>
                                 )}
+                                <button
+                                    className="menu-danger"
+                                    onClick={() => {
+                                        setShowMenu(false);
+                                        setShowDeleteModal(true);
+                                    }}
+                                >
+                                    <HiTrash /> Delete
+                                </button>
                             </div>
                         )}
                     </div>
-                    {editing ? (
-                        <div className="comment-edit-form">
-                            <input
-                                type="text"
-                                value={editText}
-                                onChange={(e) => setEditText(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleEdit();
-                                    if (e.key === "Escape") setEditing(false);
-                                }}
-                                autoFocus
-                            />
-                            <div className="comment-edit-actions">
-                                <button onClick={() => setEditing(false)}>
-                                    Cancel
-                                </button>
-                                <button className="save" onClick={handleEdit}>
-                                    Save
-                                </button>
-                            </div>
+                )}
+            </div>
+            <div className="comment-content">
+                {editing ? (
+                    <div className="comment-edit-form">
+                        <input
+                            type="text"
+                            value={editText}
+                            onChange={(e) => setEditText(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") handleEdit();
+                                if (e.key === "Escape") setEditing(false);
+                            }}
+                            autoFocus
+                        />
+                        <div className="comment-edit-actions">
+                            <button onClick={() => setEditing(false)}>
+                                Cancel
+                            </button>
+                            <button className="save" onClick={handleEdit}>
+                                Save
+                            </button>
                         </div>
-                    ) : (
-                        <p>{comment.body}</p>
-                    )}
-                </div>
-
+                    </div>
+                ) : (
+                    <p>{comment.body}</p>
+                )}
                 <div className="comment-actions-row">
                     <button
                         className={`comment-action-link ${userLiked ? "liked" : ""}`}
@@ -250,7 +262,6 @@ function CommentItem({
                         {timeAgo(comment.created_at)}
                     </span>
                 </div>
-
                 {/* Reply input */}
                 {replyOpen && (
                     <form onSubmit={handleReply} className="reply-form">
@@ -271,7 +282,6 @@ function CommentItem({
                         </button>
                     </form>
                 )}
-
                 {/* Show replies toggle */}
                 {replies.length > 0 && depth === 0 && (
                     <>
@@ -312,7 +322,6 @@ function CommentItem({
                     </>
                 )}
             </div>
-
             <ConfirmModal
                 isOpen={showDeleteModal}
                 title="Delete Comment"
@@ -508,7 +517,12 @@ export default function PostCard({ post, onUpdate }) {
                     </div>
                     <div>
                         <strong>
-                            {post.user?.name}
+                            <Link
+                                to={`/users/${post.user?.id}/profile`}
+                                className="author-link"
+                            >
+                                {post.user?.name}
+                            </Link>
                             <span className="author-purpose-tag">
                                 {" · "}
                                 {PURPOSE_LABELS[post.purpose]?.icon}{" "}
@@ -620,13 +634,14 @@ export default function PostCard({ post, onUpdate }) {
                     <button
                         className={`action-bar-btn ${userReaction ? "reacted" : ""}`}
                         onClick={handleQuickReaction}
+                        style={userReaction ? { color: REACTION_CONFIG[userReaction]?.color } : {}}
                     >
                         <span className="action-bar-emoji">
                             {userReaction
                                 ? REACTION_CONFIG[userReaction]?.emoji
                                 : "\uD83D\uDC4D"}
                         </span>
-                        <span>
+                        <span style={userReaction ? { fontWeight: '700' } : {}}>
                             {totalReactions > 0 ? totalReactions : "Like"}
                         </span>
                     </button>

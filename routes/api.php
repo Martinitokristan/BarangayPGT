@@ -8,6 +8,8 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ReactionController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Admin\AdminSmsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,11 +45,22 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reactions
     Route::post('/posts/{post}/reactions', [ReactionController::class, 'toggle']);
 
+
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::put('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+
+    // SMS Messaging
+    Route::post('/sms/send', [\App\Http\Controllers\Api\SmsController::class, 'send']);
+
+    // User Profiles
+    Route::get('/users/{user}/profile', [UserProfileController::class, 'show']);
+    Route::get('/users/{user}/posts', [UserProfileController::class, 'posts']);
+    Route::post('/users/{user}/follow', [UserProfileController::class, 'follow']);
+    Route::post('/users/{user}/follow/notifications', [UserProfileController::class, 'toggleNotifications']);
+    Route::post('/users/{user}/follow/snooze', [UserProfileController::class, 'snooze']);
 
     // Admin routes
     Route::middleware('admin')->prefix('admin')->group(function () {
@@ -56,5 +69,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/users/{user}/role', [AdminController::class, 'updateUserRole']);
         Route::get('/barangays', [AdminController::class, 'barangays']);
         Route::post('/barangays', [AdminController::class, 'storeBarangay']);
+        
+        // SMS routes
+        Route::get('/users/{user}/phone', [AdminSmsController::class, 'getUserPhone']);
+        Route::post('/users/{user}/send-sms', [AdminSmsController::class, 'sendToUser']);
+        Route::get('/sms/logs', [AdminSmsController::class, 'getLogs']);
     });
 });
