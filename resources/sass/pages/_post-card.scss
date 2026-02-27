@@ -6,12 +6,13 @@
 // ==========================================================
 
 .post-card {
-    background-color: #fff; // manual value
-    border-radius: 8px; // manual value
+    background-color: #fff; 
+    border-radius: 8px;
     box-shadow: $shadow;
-    border: 1px solid #e0e0e0; // manual value
+    border: 1px solid #e0e0e0; 
     overflow: hidden;
     transition: box-shadow $transition;
+    position: relative; // Required for absolute 3-dots
 
     &:hover {
         box-shadow: $shadow-md;
@@ -69,8 +70,9 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    padding: $space-5 $space-5 0;
+    padding: $space-5 $space-5 $space-2;
     gap: $space-3;
+    padding-right: 50px; // Space for absolute menu
 
     @media (max-width: $bp-sm) {
         flex-direction: column;
@@ -184,7 +186,10 @@
 
 // Three-dot menu
 .post-menu-wrapper {
-    position: relative;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 10;
 }
 
 .post-menu-btn {
@@ -221,6 +226,8 @@
     z-index: 100;
     overflow: hidden;
     animation: menuFadeIn 0.15s ease;
+
+
 
     button {
         display: flex;
@@ -291,7 +298,11 @@
 
     h3 {
         margin-bottom: $space-2;
-        font-size: $font-size-lg;
+        font-size: $font-size-base; // Reduced base size
+
+        @media (max-width: $bp-sm) {
+            font-size: $font-size-sm; // Even smaller for mobile
+        }
 
         a {
             color: $text-primary;
@@ -304,9 +315,13 @@
     }
 
     p {
-        font-size: $font-size-sm;
-        line-height: 1.7;
+        font-size: $font-size-base;
+        line-height: 1.6;
         color: $text-secondary;
+
+        @media (max-width: $bp-sm) {
+            font-size: $font-size-xs; // Smaller for mobile
+        }
     }
 
     .post-image {
@@ -447,41 +462,31 @@
 .reaction-picker {
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 10px; // Default to near left for mobile
+    left: 10px;
     background: $bg-white;
     border-radius: $radius-full;
-    box-shadow: $shadow-lg;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
     border: 1px solid $border-color;
     display: flex;
-    gap: 4px;
-    padding: 6px 10px;
+    gap: 2px;
+    padding: 4px 8px;
     z-index: 200;
-    animation: reactionPickerIn 0.2s cubic-bezier(0.21, 1.02, 0.73, 1);
+    animation: reactionPickerPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     white-space: nowrap;
+    touch-action: none; // Disable browser handling of touches for scrolling
 
     @media (min-width: 640px) {
         left: 50%;
         transform: translateX(-50%);
-        gap: 0;
-        padding: $space-2 $space-3;
-    }
-
-    &.align-left {
-        left: 0;
-        transform: none;
-        min-width: 180px;
-        margin-left: 8px;
-        &::after {
-            left: 32px;
-            transform: none;
-        }
+        gap: 2px;
+        padding: $space-1 $space-2;
     }
 
     &::after {
         content: "";
         position: absolute;
         bottom: -8px;
-        left: 35px; // Point to the Like button
+        left: 35px;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
         border-top: 8px solid $bg-white;
@@ -494,67 +499,127 @@
 }
 
 .reaction-picker-item {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: $radius;
-    transition: all 0.15s ease;
+    padding: 6px;
+    border-radius: $radius-full;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    -webkit-tap-highlight-color: transparent;
 
-    @media (min-width: 640px) {
-        padding: $space-2 $space-2;
+    &:hover, &.hovered {
+        transform: scale(1.4) translateY(-10px);
+        z-index: 10;
+
+        // Trigger animations on hover/swipe
+        &.reaction-like .reaction-picker-emoji { animation: reactLike 0.6s infinite; }
+        &.reaction-love .reaction-picker-emoji { animation: reactLove 0.8s infinite; }
+        &.reaction-haha .reaction-picker-emoji { animation: reactHaha 0.6s infinite; }
+        &.reaction-wow .reaction-picker-emoji { animation: reactWow 0.6s infinite; }
+        &.reaction-sad .reaction-picker-emoji { animation: reactSad 1.2s infinite; }
+        &.reaction-angry .reaction-picker-emoji { animation: reactAngry 0.4s infinite; }
     }
 
-    &:hover {
-        transform: scale(1.4) translateY(-6px);
-
-        .reaction-picker-label {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    &.active {
-        .reaction-picker-emoji {
-            transform: scale(1.1);
-        }
+    &.active .reaction-picker-emoji {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
     }
 }
 
 .reaction-picker-emoji {
-    font-size: 1.5rem; // Slightly smaller base for mobile
+    font-size: 1.8rem;
     line-height: 1;
-    transition: transform 0.15s ease;
+    transition: transform 0.2s ease;
+    user-select: none;
+    pointer-events: none; 
 
     @media (min-width: 640px) {
-        font-size: 1.75rem;
+        font-size: 2.2rem;
     }
 }
 
-.reaction-picker-label {
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: #1a1a1a;
-    text-transform: capitalize;
-    opacity: 0;
-    transform: translateY(4px);
-    transition: all 0.15s ease;
+// Reaction Keyframes
+@keyframes reactLike {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+}
+
+@keyframes reactLove {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+@keyframes reactHaha {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25% { transform: translateY(-4px) rotate(-5deg); }
+    75% { transform: translateY(-4px) rotate(5deg); }
+}
+
+@keyframes reactWow {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1) translateY(-2px); }
+}
+
+@keyframes reactSad {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+@keyframes reactAngry {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px) rotate(-2deg); }
+    75% { transform: translateX(2px) rotate(2deg); }
+}
+
+.reaction-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 2px 10px;
+    border-radius: $radius-full;
+    font-size: 0.7rem;
+    font-weight: 600;
+    pointer-events: none;
+    animation: tooltipFadeIn 0.15s ease-out;
     white-space: nowrap;
+    z-index: 100;
 }
 
-@keyframes reactionPickerIn {
-    from {
+@keyframes reactionPickerPop {
+    0% {
         opacity: 0;
-        transform: translateX(-50%) scale(0.7) translateY(8px);
+        transform: scale(0.5) translateY(20px);
     }
-    to {
+    100% {
         opacity: 1;
-        transform: translateX(-50%) scale(1) translateY(0);
+        transform: scale(1) translateY(0);
     }
+}
+
+// Adjust keyframe for desktop (needs translateX but keeping same scale/fade)
+@media (min-width: 640px) {
+    @keyframes reactionPickerPop {
+        0% {
+            opacity: 0;
+            transform: translateX(-50%) scale(0.5) translateY(20px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(-50%) scale(1) translateY(0);
+        }
+    }
+}
+
+@keyframes tooltipFadeIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(0); }
+    to { opacity: 1; transform: translateX(-50%) translateY(-8px); }
 }
 
 // Share Dropdown
@@ -607,19 +672,26 @@
             background-color: $bg-light;
         }
 
-        // Social colors on hover
-        &:nth-child(2):hover svg {
-            color: #1877f2;
+        &.share-now-btn {
+            background-color: $primary-light;
+            color: $primary-dark;
+            font-weight: 600;
+            border-bottom: 1px solid $border-color;
+            margin-bottom: $space-1;
+            
+            &:hover {
+                background-color: darken($primary-light, 5%);
+                color: $primary-dark;
+            }
+
+            svg { color: $primary; }
         }
-        &:nth-child(3):hover svg {
-            color: #0084ff;
-        }
-        &:nth-child(4):hover svg {
-            color: #25d366;
-        }
-        &:nth-child(5):hover svg {
-            color: #1da1f2;
-        }
+
+        // Social colors on hover for others
+        &:nth-child(2):hover svg { color: #1877f2; }
+        &:nth-child(3):hover svg { color: #0084ff; }
+        &:nth-child(4):hover svg { color: #25d366; }
+        &:nth-child(5):hover svg { color: #1da1f2; }
     }
 }
 
@@ -681,9 +753,11 @@
     display: flex;
     gap: $space-2;
     align-items: flex-start;
+    margin-bottom: $space-3;
+    animation: slideInUp 0.3s ease-out;
 
     &.comment-reply {
-        margin-left: $space-6;
+        margin-left: 0; // Main handles nesting
         margin-top: $space-2;
     }
 }
@@ -692,11 +766,7 @@
     width: 32px;
     height: 32px;
     border-radius: $radius-full;
-    background: linear-gradient(
-        135deg,
-        color.adjust($primary, $lightness: 20%),
-        color.adjust($primary, $lightness: 30%)
-    );
+    background: linear-gradient(135deg, $primary, color.adjust($primary, $lightness: 15%));
     color: $text-white;
     display: flex;
     align-items: center;
@@ -704,51 +774,208 @@
     font-weight: 700;
     font-size: $font-size-xs;
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 4px;
 
     .comment-reply & {
-        width: 26px;
-        height: 26px;
-        font-size: 0.65rem;
+        width: 24px;
+        height: 24px;
+        font-size: 0.6rem;
     }
 }
 
-.comment-content {
+.comment-main {
     flex: 1;
     min-width: 0;
 }
 
 .comment-bubble {
-    background-color: $bg-white;
-    padding: $space-2 $space-3;
-    border-radius: 18px;
     display: inline-block;
     max-width: 100%;
-    border: 1px solid $border-light;
+}
 
-    .comment-bubble-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: $space-2;
+.comment-bubble-inner {
+    background-color: #f0f2f5; // Facebook light grey bubble
+    padding: $space-2 $space-4;
+    border-radius: 18px;
+    position: relative;
+    border: 1px solid transparent;
 
-        strong {
-            font-size: $font-size-xs;
+    .comment-reply & {
+        padding: $space-1 $space-3;
+    }
+}
+
+.comment-bubble-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-4;
+    margin-bottom: 2px;
+
+    .comment-author {
+        font-size: $font-size-xs;
+        font-weight: 700;
+        color: $text-primary;
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.comment-text {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin: 0;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.comment-actions-row {
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    margin-top: 2px;
+    padding-left: $space-3;
+
+    .comment-action-link {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $text-muted;
+        cursor: pointer;
+        transition: color $transition-fast;
+
+        &:hover {
+            text-decoration: underline;
             color: $text-primary;
+        }
+
+        &.liked {
+            color: $primary;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            text-decoration: none;
         }
     }
 
-    p {
-        font-size: $font-size-sm;
-        color: $text-secondary;
-        margin: 0;
-        word-wrap: break-word;
+    .comment-timestamp {
+        font-size: 0.75rem;
+        color: $text-muted;
+    }
+}
+
+// Reply form refinements
+.reply-form {
+    margin-top: $space-2;
+    padding-left: $space-2;
+
+    .reply-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        background: $bg-white;
+        border: 1px solid $border-color;
+        border-radius: $radius-full;
+        padding: 4px 12px;
+
+        input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: $font-size-sm;
+            padding: 4px 0;
+        }
+
+        .reply-submit-btn {
+            background: none;
+            border: none;
+            color: $primary;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            opacity: 0.7;
+            transition: opacity $transition-fast;
+
+            &:hover {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+// Replies container & View Replies button
+.comment-replies-container {
+    margin-top: $space-2;
+    padding-left: $space-2;
+}
+
+.show-replies-btn {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    background: none;
+    border: none;
+    padding: $space-1 0;
+    font-size: $font-size-sm;
+    font-weight: 700;
+    color: $text-muted;
+    cursor: pointer;
+    position: relative;
+    transition: color $transition-fast;
+
+    .reply-line {
+        width: 20px;
+        height: 12px;
+        border-left: 2px solid $border-color;
+        border-bottom: 2px solid $border-color;
+        border-bottom-left-radius: 8px;
+        margin-right: 4px;
+        display: inline-block;
+    }
+
+    .reply-icon-rotate {
+        transform: rotate(180deg);
+        font-size: 0.9rem;
+    }
+
+    &:hover {
+        color: $text-primary;
+    }
+}
+
+.nested-replies-list {
+    margin-left: $space-6;
+    border-left: 2px solid #e4e6eb;
+    padding-left: $space-4;
+    margin-top: $space-2;
+
+    .reply-again-btn {
+        background: none;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $text-muted;
+        cursor: pointer;
+        padding: $space-2 0;
+        
+        &:hover {
+            text-decoration: underline;
+        }
     }
 }
 
 // Comment 3-dot menu
 .comment-menu-wrapper {
     position: relative;
+    margin-left: $space-2;
 }
 
 .comment-menu-btn {
@@ -756,12 +983,12 @@
     border: none;
     color: $text-muted;
     cursor: pointer;
-    padding: 2px;
+    padding: 4px;
     border-radius: $radius-full;
     display: flex;
     align-items: center;
     justify-content: center;
-    opacity: 0;
+    opacity: 0; // Only show on hover of bubble
     transition: all $transition-fast;
 
     svg {
@@ -773,7 +1000,7 @@
         color: $text-primary;
     }
 
-    .comment-bubble:hover & {
+    .comment-bubble-inner:hover & {
         opacity: 1;
     }
 }

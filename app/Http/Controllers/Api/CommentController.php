@@ -29,6 +29,15 @@ class CommentController extends Controller
             'parent_id' => 'nullable|exists:comments,id',
         ]);
 
+        if ($request->parent_id) {
+            $replyCount = Comment::where('parent_id', $request->parent_id)->count();
+            if ($replyCount >= 50) {
+                return response()->json([
+                    'message' => 'This comment has reached the maximum of 50 replies.'
+                ], 422);
+            }
+        }
+
         $comment = Comment::create([
             'post_id' => $post->id,
             'user_id' => $request->user()->id,

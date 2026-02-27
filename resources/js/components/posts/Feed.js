@@ -1,21 +1,26 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
+import { useAuth } from "../../contexts/AuthContext";
 import PostCard from "./PostCard";
 import {
     HiPlusCircle,
     HiSearch,
     HiChevronLeft,
     HiChevronRight,
+    HiUserCircle,
 } from "react-icons/hi";
 
 export default function Feed() {
+    const { user } = useAuth();
     const toast = useToast();
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [initialLoad, setInitialLoad] = useState(true);
-    const [search, setSearch] = useState("");
+    const [search, setSearch] = useState(searchParams.get("search") || "");
     const [page, setPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
 
@@ -50,32 +55,63 @@ export default function Feed() {
         return () => clearInterval(interval);
     }, [fetchPosts]);
 
+    useEffect(() => {
+        const query = searchParams.get("search") || "";
+        if (query !== search) {
+            setSearch(query);
+            setPage(1);
+        }
+    }, [searchParams]);
+
     const handleSearchChange = (e) => {
         setSearch(e.target.value);
         setPage(1);
     };
 
+    const handleCreatePostClick = () => {
+        navigate("/posts/create");
+    };
+
+    const handleUpdatePost = (postId, updatedPost) => {
+        if (!updatedPost) {
+            // If no post provided, just re-fetch (for backward compatibility)
+            fetchPosts();
+            return;
+        }
+        setPosts((prevPosts) =>
+            prevPosts.map((p) => (p.id === postId ? updatedPost : p)),
+        );
+    };
+
+    const handleDeletePost = (postId) => {
+        setPosts((prevPosts) => prevPosts.filter((p) => p.id !== postId));
+    };
+
     return (
         <div className="feed-container modern-feed">
+            {/* ... */}
             <div className="feed-header modern-feed-header">
                 <h2 className="modern-feed-title">Community Feed</h2>
-                <Link
-                    to="/posts/create"
-                    className="btn btn-primary modern-feed-newpost"
-                >
-                    <HiPlusCircle /> New Post
-                </Link>
             </div>
-            <div className="modern-feed-searchbar">
-                <HiSearch className="modern-search-icon" />
-                <input
-                    type="text"
-                    placeholder="Search posts..."
-                    value={search}
-                    onChange={handleSearchChange}
-                    className="modern-search-input"
-                />
+            {/* ... */}
+            <div className="create-post-bar" onClick={handleCreatePostClick}>
+                <div className="bar-avatar">
+                   <HiUserCircle />
+                </div>
+                <div className="bar-input">
+                    What's on your mind, {user?.name?.split(' ')[0]}?
+                </div>
             </div>
+
+            {search && (
+                <div className="active-search-indicator">
+                    <span>Showing results for: <strong>"{search}"</strong></span>
+                    <button onClick={() => {
+                        setSearch("");
+                        setSearchParams({});
+                    }}>Clear</button>
+                </div>
+            )}
             {loading ? (
                 <div className="loading-spinner">Loading posts...</div>
             ) : posts.length === 0 ? (
@@ -92,7 +128,8 @@ export default function Feed() {
                             <PostCard
                                 key={post.id}
                                 post={post}
-                                onUpdate={fetchPosts}
+                                onUpdate={handleUpdatePost}
+                                onDelete={() => handleDeletePost(post.id)}
                             />
                         ))}
                     </div>

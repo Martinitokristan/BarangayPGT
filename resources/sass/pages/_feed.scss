@@ -99,3 +99,59 @@
     flex-direction: column;
     gap: $space-5;
 }
+
+.create-post-bar {
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    padding: $space-4 $space-5;
+    margin-bottom: $space-6;
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    cursor: pointer;
+    box-shadow: $shadow;
+    border: 1px solid $border-color;
+    transition: background-color $transition-fast;
+
+    &:hover {
+        background-color: $bg-light;
+    }
+
+    .bar-avatar {
+        font-size: 2.2rem;
+        color: $secondary;
+        display: flex;
+        align-items: center;
+    }
+
+    .bar-input {
+        flex: 1;
+        background-color: $bg-light;
+        color: $text-secondary;
+        padding: $space-3 $space-5;
+        border-radius: $radius-full;
+        font-size: $font-size-base;
+        border: 1px solid $border-color;
+    }
+}
+
+.active-search-indicator {
+    background-color: $primary-light;
+    padding: $space-3 $space-5;
+    border-radius: $radius;
+    margin-bottom: $space-5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: $font-size-sm;
+    color: $primary-dark;
+
+    button {
+        background: none;
+        border: none;
+        color: $primary;
+        font-weight: 700;
+        cursor: pointer;
+        &:hover { text-decoration: underline; }
+    }
+}

@@ -49,6 +49,43 @@
     }
 }
 
+
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin-left: auto;
+    margin-right: $space-4;
+
+    @media (max-width: $bp-md) {
+        margin-right: 0;
+    }
+}
+
+.nav-icon-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: $space-2;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all $transition-fast;
+
+    &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: $text-white;
+    }
+
+    &.profile-link {
+        font-size: 1.6rem;
+    }
+}
+
 .mobile-menu-btn {
     display: none;
     background: none;
@@ -195,4 +232,73 @@
     background-color: rgba(255, 255, 255, 0.1);
     padding: $space-1 $space-2;
     border-radius: $radius-full;
+}
+
+.navbar-search-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    padding-top: 100px;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.2s ease-out;
+
+    .search-container {
+        width: 100%;
+        max-width: 600px;
+        position: relative;
+        padding: 0 $space-6;
+
+        .search-icon {
+            position: absolute;
+            left: $space-10;
+            top: 50%;
+            transform: translateY(-50%);
+            color: $text-muted;
+            font-size: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: $space-4 $space-12 $space-4 $space-12;
+            border-radius: $radius-full;
+            border: none;
+            background-color: $bg-white;
+            font-size: $font-size-lg;
+            outline: none;
+            box-shadow: $shadow-lg;
+        }
+
+        .close-search {
+            position: absolute;
+            right: $space-10;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: $secondary;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: $space-1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: $radius-full;
+
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.05);
+                color: $danger;
+            }
+        }
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }

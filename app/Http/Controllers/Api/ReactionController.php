@@ -11,9 +11,19 @@ class ReactionController extends Controller
 {
     public function toggle(Request $request, Post $post)
     {
-        $request->validate([
-            'type' => 'required|in:like,support,urgent,sad,angry',
+        $validator = \Validator::make($request->all(), [
+            'type' => 'required|in:like,love,haha,wow,sad,angry,support,urgent',
         ]);
+
+        if ($validator->fails()) {
+            \Log::error('Reaction validation failed', [
+                'post_id' => $post->id,
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->all(),
+                'user_id' => $request->user() ? $request->user()->id : 'guest'
+            ]);
+            return response()->json($validator->errors(), 422);
+        }
 
         $existing = Reaction::where('post_id', $post->id)
             ->where('user_id', $request->user()->id)

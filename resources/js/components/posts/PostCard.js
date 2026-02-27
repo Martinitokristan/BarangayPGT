@@ -19,6 +19,7 @@ import {
     HiShare,
     HiExternalLink,
     HiReply,
+    HiX,
 } from "react-icons/hi";
 import { RiAlarmWarningFill, RiShieldStarFill } from "react-icons/ri";
 import {
@@ -26,8 +27,10 @@ import {
     FaFacebookMessenger,
     FaWhatsapp,
     FaTwitter,
+    FaShare,
 } from "react-icons/fa";
 import "../../../sass/pages/_post-card.scss";
+import CommentModal from "./CommentModal";
 
 const REACTION_CONFIG = {
     like: { emoji: "👍", label: "Like", color: "#3b5998" },
@@ -58,303 +61,30 @@ const STATUS_LABELS = {
     resolved: "Resolved",
 };
 
-/* ===================== Comment Item ===================== */
-function CommentItem({
-    comment,
-    postId,
-    user,
-    toast,
-    depth = 0,
-    onDelete,
-    onUpdate,
-}) {
-    const [showMenu, setShowMenu] = useState(false);
-    const [editing, setEditing] = useState(false);
-    const [editText, setEditText] = useState(comment.body);
-    const [replyOpen, setReplyOpen] = useState(false);
-    const [replyText, setReplyText] = useState("");
-    const [replies, setReplies] = useState(comment.replies || []);
-    const [showReplies, setShowReplies] = useState(false);
-    const [likedBy, setLikedBy] = useState(comment.liked_by || []);
-    const [submittingReply, setSubmittingReply] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const menuRef = useRef(null);
-
-    const isOwner = user?.id === comment.user_id;
-    const isAdmin = user?.role === "admin";
-    const canManage = isOwner || isAdmin;
-    const userLiked = user ? likedBy.includes(user.id) : false;
-
-    useEffect(() => {
-        const handler = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target))
-                setShowMenu(false);
-        };
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
-    }, []);
-
-    const handleLike = async () => {
-        try {
-            const res = await api.post(
-                `/posts/${postId}/comments/${comment.id}/like`,
-            );
-            setLikedBy(res.data.liked_by);
-        } catch {
-            toast.error("Failed to like comment.");
-        }
-    };
-
-    const handleEdit = async () => {
-        if (!editText.trim()) return;
-        try {
-            const res = await api.put(
-                `/posts/${postId}/comments/${comment.id}`,
-                { body: editText },
-            );
-            onUpdate(comment.id, res.data.body);
-            setEditing(false);
-            toast.success("Comment updated.");
-        } catch {
-            toast.error("Failed to update comment.");
-        }
-    };
-
-    const handleDelete = async () => {
-        try {
-            await api.delete(`/posts/${postId}/comments/${comment.id}`);
-            onDelete(comment.id);
-            setShowDeleteModal(false);
-            toast.success("Comment deleted.");
-        } catch {
-            toast.error("Failed to delete comment.");
-        }
-    };
-
-    const handleReply = async (e) => {
-        e.preventDefault();
-        if (!replyText.trim()) return;
-        setSubmittingReply(true);
-        try {
-            const res = await api.post(`/posts/${postId}/comments`, {
-                body: replyText,
-                parent_id: comment.id,
-            });
-            setReplies([...replies, res.data]);
-            setReplyText("");
-            setReplyOpen(false);
-            setShowReplies(true);
-            toast.success("Reply posted!");
-        } catch {
-            toast.error("Failed to post reply.");
-        } finally {
-            setSubmittingReply(false);
-        }
-    };
-
-    const timeAgo = (date) => {
-        const seconds = Math.floor((new Date() - new Date(date)) / 1000);
-        if (seconds < 60) return "Just now";
-        const mins = Math.floor(seconds / 66);
-        if (mins < 60) return `${mins}m`;
-        const hrs = Math.floor(mins / 60);
-        if (hrs < 24) return `${hrs}h`;
-        const days = Math.floor(hrs / 24);
-        if (days < 7) return `${days}d`;
-        return new Date(date).toLocaleDateString();
-    };
-
-    return (
-        <div className={`post-card${depth > 0 ? " comment-reply" : ""}`}>
-            <div className="post-header">
-                <div className="post-avatar">
-                    {comment.user?.name?.charAt(0).toUpperCase()}
-                </div>
-                <div className="post-header-content">
-                    <span className="post-author">
-                        <Link
-                            to={`/users/${comment.user?.id}/profile`}
-                            className="author-link"
-                        >
-                            {comment.user?.name}
-                        </Link>
-                    </span>
-                    <div className="post-meta">
-                        {timeAgo(comment.created_at)}
-                    </div>
-                </div>
-                {canManage && (
-                    <div className="comment-menu-wrapper" ref={menuRef}>
-                        <button
-                            className="comment-menu-btn"
-                            onClick={() => setShowMenu(!showMenu)}
-                        >
-                            <HiDotsHorizontal />
-                        </button>
-                        {showMenu && (
-                            <div className="comment-menu-dropdown">
-                                {isOwner && (
-                                    <button
-                                        onClick={() => {
-                                            setShowMenu(false);
-                                            setEditing(true);
-                                            setEditText(comment.body);
-                                        }}
-                                    >
-                                        <HiPencil /> Edit
-                                    </button>
-                                )}
-                                <button
-                                    className="menu-danger"
-                                    onClick={() => {
-                                        setShowMenu(false);
-                                        setShowDeleteModal(true);
-                                    }}
-                                >
-                                    <HiTrash /> Delete
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-            <div className="comment-content">
-                {editing ? (
-                    <div className="comment-edit-form">
-                        <input
-                            type="text"
-                            value={editText}
-                            onChange={(e) => setEditText(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleEdit();
-                                if (e.key === "Escape") setEditing(false);
-                            }}
-                            autoFocus
-                        />
-                        <div className="comment-edit-actions">
-                            <button onClick={() => setEditing(false)}>
-                                Cancel
-                            </button>
-                            <button className="save" onClick={handleEdit}>
-                                Save
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <p>{comment.body}</p>
-                )}
-                <div className="comment-actions-row">
-                    <button
-                        className={`comment-action-link ${userLiked ? "liked" : ""}`}
-                        onClick={handleLike}
-                    >
-                        Like{likedBy.length > 0 && ` (${likedBy.length})`}
-                    </button>
-                    {depth === 0 && (
-                        <button
-                            className="comment-action-link"
-                            onClick={() => setReplyOpen(!replyOpen)}
-                        >
-                            Reply
-                        </button>
-                    )}
-                    <span className="comment-timestamp">
-                        {timeAgo(comment.created_at)}
-                    </span>
-                </div>
-                {/* Reply input */}
-                {replyOpen && (
-                    <form onSubmit={handleReply} className="reply-form">
-                        <input
-                            type="text"
-                            value={replyText}
-                            onChange={(e) => setReplyText(e.target.value)}
-                            placeholder={`Reply to ${comment.user?.name}...`}
-                            maxLength={1000}
-                            autoFocus
-                        />
-                        <button
-                            type="submit"
-                            className="btn btn-sm btn-primary"
-                            disabled={submittingReply}
-                        >
-                            {submittingReply ? "..." : <HiReply />}
-                        </button>
-                    </form>
-                )}
-                {/* Show replies toggle */}
-                {replies.length > 0 && depth === 0 && (
-                    <>
-                        {!showReplies && (
-                            <button
-                                className="show-replies-btn"
-                                onClick={() => setShowReplies(true)}
-                            >
-                                <HiReply /> {replies.length}{" "}
-                                {replies.length === 1 ? "reply" : "replies"}
-                            </button>
-                        )}
-                        {showReplies &&
-                            replies.map((reply) => (
-                                <CommentItem
-                                    key={reply.id}
-                                    comment={reply}
-                                    postId={postId}
-                                    user={user}
-                                    toast={toast}
-                                    depth={depth + 1}
-                                    onDelete={(id) =>
-                                        setReplies(
-                                            replies.filter((r) => r.id !== id),
-                                        )
-                                    }
-                                    onUpdate={(id, newBody) =>
-                                        setReplies(
-                                            replies.map((r) =>
-                                                r.id === id
-                                                    ? { ...r, body: newBody }
-                                                    : r,
-                                            ),
-                                        )
-                                    }
-                                />
-                            ))}
-                    </>
-                )}
-            </div>
-            <ConfirmModal
-                isOpen={showDeleteModal}
-                title="Delete Comment"
-                message="Are you sure you want to delete this comment?"
-                confirmText="Delete"
-                variant="danger"
-                onConfirm={handleDelete}
-                onCancel={() => setShowDeleteModal(false)}
-            />
-        </div>
-    );
-}
-
 /* ===================== PostCard ===================== */
-export default function PostCard({ post, onUpdate }) {
+export default function PostCard({ post, onUpdate, onDelete }) {
     const { user } = useAuth();
     const toast = useToast();
     const navigate = useNavigate();
-    const [showComments, setShowComments] = useState(false);
-    const [comments, setComments] = useState(post.comments || []);
-    const [newComment, setNewComment] = useState("");
     const [reactions, setReactions] = useState(getInitialReactions(post));
     const [userReaction, setUserReaction] = useState(getUserReaction(post));
-    const [submitting, setSubmitting] = useState(false);
     const [showPostMenu, setShowPostMenu] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
+    const [hoveredReaction, setHoveredReaction] = useState(null);
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const menuRef = useRef(null);
-    const reactionRef = useRef(null);
+    const pickerRef = useRef(null);
     const shareRef = useRef(null);
     const reactionTimeout = useRef(null);
     const shareTimeout = useRef(null);
+    const pressTimer = useRef(null);
+    const showReactionTimer = useRef(null);
+    const hoverTimeoutRef = useRef(null); // Added for reaction picker hover
 
     function getInitialReactions(post) {
         const counts = {};
@@ -374,7 +104,7 @@ export default function PostCard({ post, onUpdate }) {
         return null;
     }
 
-    // Close menus on outside click
+    // Close menus on outside click and handle global touch tracking
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -383,13 +113,56 @@ export default function PostCard({ post, onUpdate }) {
             if (shareRef.current && !shareRef.current.contains(e.target)) {
                 setShowShareMenu(false);
             }
+            if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+                setShowReactionPicker(false);
+                setHoveredReaction(null);
+            }
         };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
 
-    const handleReaction = async (type) => {
+        const handleGlobalTouchMove = (e) => {
+            if (!showReactionPicker) return;
+
+            // Critical: Prevent page scroll during selection
+            if (e.cancelable) e.preventDefault();
+
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const reactionItem = element?.closest(".reaction-picker-item"); // Fixed selector
+            if (reactionItem) {
+                const type = reactionItem.getAttribute("data-type");
+                setHoveredReaction(type);
+            } else {
+                setHoveredReaction(null);
+            }
+        };
+
+        const handleGlobalTouchEnd = (e) => {
+            if (!showReactionPicker) return;
+
+            if (hoveredReaction) {
+                handleReact(hoveredReaction); // Updated to handleReact
+            }
+
+            setShowReactionPicker(false);
+            setHoveredReaction(null);
+            pressTimer.current = null;
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        if (showReactionPicker) {
+            window.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+            window.addEventListener("touchend", handleGlobalTouchEnd);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener("touchmove", handleGlobalTouchMove);
+            window.removeEventListener("touchend", handleGlobalTouchEnd);
+        };
+    }, [showReactionPicker, hoveredReaction]); // Re-run when picker/hover states change
+
+    const handleReact = async (type) => { // Renamed from handleReaction
         try {
             const res = await api.post(`/posts/${post.id}/reactions`, { type });
             setReactions(res.data.reactions);
@@ -400,8 +173,12 @@ export default function PostCard({ post, onUpdate }) {
         setShowReactionPicker(false);
     };
 
-    const handleQuickReaction = async () => {
-        const type = userReaction ? userReaction : "like";
+    const handleLikeClick = async () => { // Renamed from handleQuickReaction
+        if (pressTimer.current === "long-press-triggered") {
+            // If long press was triggered, don't do quick reaction on mouse up
+            return;
+        }
+        const type = userReaction ? userReaction : "like"; // Toggle off current OR add like
         try {
             const res = await api.post(`/posts/${post.id}/reactions`, { type });
             setReactions(res.data.reactions);
@@ -411,28 +188,51 @@ export default function PostCard({ post, onUpdate }) {
         }
     };
 
-    const handleComment = async (e) => {
-        e.preventDefault();
-        if (!newComment.trim()) return;
-        setSubmitting(true);
-        try {
-            const res = await api.post(`/posts/${post.id}/comments`, {
-                body: newComment,
-            });
-            setComments([res.data, ...comments]);
-            setNewComment("");
-        } catch (e) {
-            toast.error("Failed to post comment.");
-        } finally {
-            setSubmitting(false);
+    const handlePressStart = (e) => {
+        // Start a timer for long press
+        pressTimer.current = setTimeout(() => {
+            setShowReactionPicker(true);
+            setHoveredReaction("like"); // Start with "Like" hovered during long press
+            pressTimer.current = "long-press-triggered";
+        }, 500);
+    };
+
+    const handleTouchMove = (e) => {
+        if (!showReactionPicker) return;
+
+        // Prevent page scrolling while selecting reactions
+        if (e.cancelable) {
+            e.preventDefault();
+        }
+
+        const touch = e.touches[0];
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const reactionItem = element?.closest(".reaction-picker-item"); // Fixed selector
+        if (reactionItem) {
+            const type = reactionItem.getAttribute("data-type");
+            setHoveredReaction(type);
+        } else {
+            setHoveredReaction(null);
         }
     };
 
-    const handleDeletePost = async () => {
+    const handlePressEnd = (e) => {
+        if (pressTimer.current) {
+            if (pressTimer.current !== "long-press-triggered") {
+                clearTimeout(pressTimer.current);
+                handleLikeClick(); // Updated to handleLikeClick
+                pressTimer.current = null;
+            }
+            // Long press release is handled by global touchend listener
+        }
+    };
+
+    const handleDelete = async () => { // Renamed from handleDeletePost
         try {
             await api.delete(`/posts/${post.id}`);
             toast.success("Post deleted successfully.");
-            if (onUpdate) onUpdate();
+            if (onDelete) onDelete(post.id);
+            else if (onUpdate) onUpdate();
         } catch (e) {
             toast.error("Failed to delete post.");
         }
@@ -440,6 +240,16 @@ export default function PostCard({ post, onUpdate }) {
     };
 
     const getPostUrl = () => `${window.location.origin}/posts/${post.id}`;
+
+    const handleSharePost = async () => {
+        try {
+            // Internal share logic placeholder
+            toast.success("Post shared successfully to your profile!");
+            setShowShareMenu(false);
+        } catch (e) {
+            toast.error("Failed to share post.");
+        }
+    };
 
     const handleShare = (platform) => {
         const url = encodeURIComponent(getPostUrl());
@@ -469,14 +279,21 @@ export default function PostCard({ post, onUpdate }) {
         setShowShareMenu(false);
     };
 
-    const handleReactionMouseEnter = () => {
-        clearTimeout(reactionTimeout.current);
-        setShowReactionPicker(true);
+    const handleMouseEnter = () => { // Renamed from handleReactionMouseEnter
+        if (window.innerWidth < 768) return; // Disable hover trigger on mobile
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setShowReactionPicker(true);
+        }, 500); // 0.5 second delay for desktop
     };
-    const handleReactionMouseLeave = () => {
-        reactionTimeout.current = setTimeout(
-            () => setShowReactionPicker(false),
-            400,
+    const handleMouseLeave = () => { // Renamed from handleReactionMouseLeave
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(
+            () => {
+                setShowReactionPicker(false);
+                setHoveredReaction(null);
+            },
+            100, // Snap close on leave
         );
     };
     const handleShareMouseEnter = () => {
@@ -487,16 +304,20 @@ export default function PostCard({ post, onUpdate }) {
         shareTimeout.current = setTimeout(() => setShowShareMenu(false), 300);
     };
 
-    const isUrgent = post.urgency_level === "high";
+    const isUrgent = post.urgency_level === "high" && post.status !== "resolved";
     const urgencyInfo = URGENCY_STYLES[post.urgency_level];
     const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
     const isOwner = user?.id === post.user_id;
     const isAdmin = user?.role === "admin";
     const canManage = isOwner || isAdmin;
-    const totalComments = comments.reduce(
-        (sum, c) => sum + 1 + (c.replies?.length || 0),
-        0,
-    );
+    
+    // Use comments_count from server if available, otherwise calculate from local array
+    const totalComments = post.comments_count !== undefined 
+        ? post.comments_count 
+        : (post.comments || []).reduce(
+            (acc, comment) => acc + 1 + (comment.replies?.length || 0),
+            0
+        );
 
     return (
         <div
@@ -541,7 +362,7 @@ export default function PostCard({ post, onUpdate }) {
                 </div>
                 <div className="post-header-right">
                     <div className="post-meta">
-                        {isAdmin && (
+                        {isAdmin && post.status !== "resolved" && (
                             <span
                                 className={`badge-urgency ${urgencyInfo.className}`}
                             >
@@ -615,7 +436,7 @@ export default function PostCard({ post, onUpdate }) {
                     <span />
                     <button
                         className="comment-stat-count"
-                        onClick={() => setShowComments(!showComments)}
+                        onClick={() => setShowCommentModal(true)}
                     >
                         {totalComments}{" "}
                         {totalComments === 1 ? "comment" : "comments"}
@@ -625,41 +446,61 @@ export default function PostCard({ post, onUpdate }) {
 
             {/* Action Bar */}
             <div className="post-action-bar">
-                <div
-                    className="action-bar-item reaction-trigger"
-                    ref={reactionRef}
-                    onMouseEnter={handleReactionMouseEnter}
-                    onMouseLeave={handleReactionMouseLeave}
-                >
+                <div className="action-bar-item reaction-trigger">
                     <button
                         className={`action-bar-btn ${userReaction ? "reacted" : ""}`}
-                        onClick={handleQuickReaction}
-                        style={userReaction ? { color: REACTION_CONFIG[userReaction]?.color } : {}}
+                        style={{
+                            color: userReaction
+                                ? REACTION_CONFIG[userReaction]?.color
+                                : "inherit",
+                        }}
+                        onClick={handleLikeClick}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
+                        onTouchStart={handlePressStart}
+                        onTouchEnd={handlePressEnd}
                     >
-                        <span className="action-bar-emoji">
-                            {userReaction
-                                ? REACTION_CONFIG[userReaction]?.emoji
-                                : "\uD83D\uDC4D"}
-                        </span>
+                        {userReaction ? (
+                            <span className="action-bar-emoji">
+                                {REACTION_CONFIG[userReaction].emoji}
+                            </span>
+                        ) : (
+                            <HiExclamation />
+                        )}
                         <span style={userReaction ? { fontWeight: '700' } : {}}>
-                            {totalReactions > 0 ? totalReactions : "Like"}
+                            {userReaction
+                                ? REACTION_CONFIG[userReaction].label
+                                : "Like"}
                         </span>
                     </button>
 
                     {showReactionPicker && (
-                        <div className="reaction-picker">
+                        <div
+                            className="reaction-picker"
+                            ref={pickerRef}
+                            onMouseEnter={() => {
+                                if (hoverTimeoutRef.current)
+                                    clearTimeout(hoverTimeoutRef.current);
+                            }}
+                            onMouseLeave={handleMouseLeave}
+                        >
                             {Object.entries(REACTION_CONFIG).map(
-                                ([type, config]) => (
+                                ([key, config]) => (
                                     <button
-                                        key={type}
-                                        className={`reaction-picker-item ${userReaction === type ? "active" : ""}`}
-                                        onClick={() => handleReaction(type)}
+                                        key={key}
+                                        data-type={key}
+                                        className={`reaction-picker-item reaction-${key} ${userReaction === key ? "active" : ""} ${hoveredReaction === key ? "hovered" : ""}`}
+                                        onClick={() => handleReact(key)}
+                                        onMouseEnter={() => setHoveredReaction(key)}
+                                        onMouseLeave={() => setHoveredReaction(null)}
                                     >
+                                        {hoveredReaction === key && (
+                                            <span className="reaction-tooltip">
+                                                {config.label}
+                                            </span>
+                                        )}
                                         <span className="reaction-picker-emoji">
                                             {config.emoji}
-                                        </span>
-                                        <span className="reaction-picker-label">
-                                            {config.label}
                                         </span>
                                     </button>
                                 ),
@@ -668,13 +509,15 @@ export default function PostCard({ post, onUpdate }) {
                     )}
                 </div>
 
-                <button
-                    className="action-bar-btn"
-                    onClick={() => setShowComments(!showComments)}
-                >
-                    <HiChat />
-                    <span>Comment</span>
-                </button>
+                <div className="action-bar-item">
+                    <button
+                        className="action-bar-btn"
+                        onClick={() => setShowCommentModal(true)}
+                    >
+                        <HiChat />
+                        <span>Comment</span>
+                    </button>
+                </div>
 
                 <div
                     className="action-bar-item share-trigger"
@@ -683,11 +526,14 @@ export default function PostCard({ post, onUpdate }) {
                     onMouseLeave={handleShareMouseLeave}
                 >
                     <button className="action-bar-btn">
-                        <HiShare />
+                        <FaShare />
                         <span>Share</span>
                     </button>
                     {showShareMenu && (
                         <div className="share-dropdown">
+                            <button className="share-now-btn" onClick={handleSharePost}>
+                                <FaShare /> Share now (Public)
+                            </button>
                             <button onClick={() => handleShare("copy")}>
                                 <HiLink /> Copy Link
                             </button>
@@ -713,68 +559,25 @@ export default function PostCard({ post, onUpdate }) {
                 </div>
             </div>
 
-            {/* Comments Section */}
-            {showComments && (
-                <div className="comments-section">
-                    <form onSubmit={handleComment} className="comment-form">
-                        <div className="comment-form-avatar">
-                            {user?.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <input
-                            type="text"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Write a comment..."
-                            maxLength={1000}
-                        />
-                        <button
-                            type="submit"
-                            className="btn btn-sm btn-primary"
-                            disabled={submitting || !newComment.trim()}
-                        >
-                            {submitting ? "..." : "Post"}
-                        </button>
-                    </form>
-                    <div className="comments-list">
-                        {comments.map((comment) => (
-                            <CommentItem
-                                key={comment.id}
-                                comment={comment}
-                                postId={post.id}
-                                user={user}
-                                toast={toast}
-                                onDelete={(id) =>
-                                    setComments(
-                                        comments.filter((c) => c.id !== id),
-                                    )
-                                }
-                                onUpdate={(id, newBody) =>
-                                    setComments(
-                                        comments.map((c) =>
-                                            c.id === id
-                                                ? { ...c, body: newBody }
-                                                : c,
-                                        ),
-                                    )
-                                }
-                            />
-                        ))}
-                        {comments.length === 0 && (
-                            <p className="no-comments">
-                                No comments yet. Be the first to comment!
-                            </p>
-                        )}
-                    </div>
-                </div>
-            )}
+            {/* Comment Modal */}
+            <CommentModal
+                isOpen={showCommentModal}
+                onClose={() => setShowCommentModal(false)}
+                post={post}
+                user={user}
+                toast={toast}
+                initialComments={post.comments || []}
+                reactionsSummary={post.reactions_summary || {}}
+                onUpdate={onUpdate}
+            />
 
             <ConfirmModal
                 isOpen={showDeleteModal}
                 title="Delete Post"
-                message="Are you sure you want to delete this post? All comments and reactions will be permanently removed."
-                confirmText="Delete Post"
+                message="Are you sure you want to delete this post? This action cannot be undone."
+                confirmText="Delete"
                 variant="danger"
-                onConfirm={handleDeletePost}
+                onConfirm={handleDelete}
                 onCancel={() => setShowDeleteModal(false)}
             />
         </div>

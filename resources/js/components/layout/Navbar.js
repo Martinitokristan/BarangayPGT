@@ -9,6 +9,8 @@ import {
     HiLogout,
     HiMenu,
     HiX,
+    HiSearch,
+    HiUserCircle,
 } from "react-icons/hi";
 import { RiShieldStarFill } from "react-icons/ri";
 
@@ -17,6 +19,8 @@ export default function Navbar() {
     const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         if (user) {
@@ -38,6 +42,15 @@ export default function Navbar() {
         navigate("/login");
     };
 
+    const handleSearchSubmit = (e) => {
+        if (e) e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/?search=${encodeURIComponent(searchQuery.trim())}`);
+            setSearchOpen(false);
+            setSearchQuery("");
+        }
+    };
+
     if (!user) return null;
 
     return (
@@ -50,12 +63,28 @@ export default function Navbar() {
                     <span className="brand-text">Barangay Sumbongan</span>
                 </Link>
 
-                <button
-                    className="mobile-menu-btn"
-                    onClick={() => setMenuOpen(!menuOpen)}
-                >
-                    {menuOpen ? <HiX /> : <HiMenu />}
-                </button>
+                <div className="navbar-actions">
+                    <button
+                        className="nav-icon-btn"
+                        onClick={() => setSearchOpen(!searchOpen)}
+                        title="Search"
+                    >
+                        <HiSearch />
+                    </button>
+                    <Link
+                        to={`/users/${user.id}/profile`}
+                        className="nav-icon-btn profile-link"
+                        title="My Profile"
+                    >
+                        <HiUserCircle />
+                    </Link>
+                    <button
+                        className="mobile-menu-btn"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        {menuOpen ? <HiX /> : <HiMenu />}
+                    </button>
+                </div>
 
                 <div className={`navbar-links ${menuOpen ? "open" : ""}`}>
                     <Link
@@ -103,6 +132,28 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
+
+            {searchOpen && (
+                <div className="navbar-search-overlay">
+                    <form onSubmit={handleSearchSubmit} className="search-container">
+                        <HiSearch className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Find posts, issues, and more..."
+                            autoFocus
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button 
+                            type="button"
+                            className="close-search"
+                            onClick={() => setSearchOpen(false)}
+                        >
+                            <HiX />
+                        </button>
+                    </form>
+                </div>
+            )}
         </nav>
     );
 }

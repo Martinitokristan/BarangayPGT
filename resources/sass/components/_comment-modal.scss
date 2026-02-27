@@ -1,0 +1,228 @@
+@use "sass:color";
+@import "../base/variables";
+
+.comment-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end; /* Bottom sheet by default */
+    animation: fadeIn 0.2s ease-out;
+}
+
+.comment-modal-container {
+    background-color: $bg-white;
+    width: 100%;
+    max-width: 600px;
+    height: 90vh;
+    border-radius: 20px 20px 0 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: $shadow-lg;
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    border: 1px solid $border-light;
+
+    @media (min-width: 768px) {
+        height: 80vh;
+        border-radius: $radius-lg;
+        align-self: center;
+        animation: modalScaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+}
+
+.comment-modal-header {
+    padding: $space-3 $space-4;
+    border-bottom: 1px solid $border-light;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    
+    .header-drag-handle {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background-color: $border-color;
+        border-radius: $radius-full;
+        
+        @media (min-width: 768px) {
+            display: none;
+        }
+    }
+
+    .header-title {
+        font-weight: 700;
+        color: $text-primary;
+        font-size: $font-size-base;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: $text-muted;
+        cursor: pointer;
+        padding: $space-1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color $transition-fast;
+
+        &:hover {
+            color: $text-primary;
+        }
+    }
+}
+
+.comment-modal-stats {
+    padding: $space-2 $space-4;
+    border-bottom: 1px solid $border-light;
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    font-size: $font-size-xs;
+    color: $text-secondary;
+    background-color: $bg-light;
+
+    .stat-reactions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        
+        .reaction-icons {
+            display: flex;
+            align-items: center;
+            span {
+                margin-left: -4px;
+                &:first-child { margin-left: 0; }
+            }
+        }
+    }
+}
+
+.comment-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: $space-4;
+}
+
+.comment-modal-footer {
+    padding: $space-3 $space-4;
+    border-top: 1px solid $border-light;
+    background-color: $bg-white;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+
+    .reply-indicator {
+        background-color: #f7f8fa;
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: $font-size-xs;
+        color: $text-secondary;
+        border-radius: $radius-md;
+        border: 1px solid $border-light;
+
+        strong {
+            color: $primary;
+            margin: 0 4px;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: $text-muted;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            padding: 2px;
+            transition: color $transition-fast;
+
+            &:hover {
+                color: $text-primary;
+            }
+        }
+    }
+
+    .comment-form {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        background: #f0f2f5;
+        padding: 6px 12px;
+        border-radius: $radius-full;
+
+        .form-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: $radius-full;
+            background: linear-gradient(135deg, $primary, color.adjust($primary, $lightness: 10%));
+            color: $text-white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: $font-size-sm;
+            flex-shrink: 0;
+        }
+
+        input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            padding: $space-2 0;
+            font-size: $font-size-sm;
+            color: $text-primary;
+            
+            &::placeholder {
+                color: $text-muted;
+            }
+        }
+
+        .submit-btn {
+            background: none;
+            border: none;
+            color: $primary;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0 $space-2;
+            transition: opacity $transition-fast;
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+    }
+}
+
+/* Animations */
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes modalScaleUp {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
