@@ -22,13 +22,13 @@ class DatabaseSeeder extends Seeder
 
         // Create admin user
         User::create([
-            'name' => 'Admin',
+            'name' => 'Barangay Pagatpatan Official Account',
             'email' => 'admin@barangaypgt.com',
             'password' => Hash::make('password123'),
             'role' => 'admin',
             'barangay_id' => $barangay->id,
             'phone' => '09171234567',
-            'address' => 'Barangay Hall, PGT',
+            'address' => 'Barangay Hall, Pagatpatan',
         ]);
 
         // Create sample resident

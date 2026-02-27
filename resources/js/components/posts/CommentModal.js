@@ -280,20 +280,57 @@ export default function CommentModal({
     const [newComment, setNewComment] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [replyTarget, setReplyTarget] = useState(null); // { id, name, threadParentId, depth }
+    const [dragY, setDragY] = useState(0);
+    const [isDragging, setIsDragging] = useState(false);
+    const touchStartY = React.useRef(0);
     const scrollRef = React.useRef(null);
     const inputRef = React.useRef(null);
+
+    // Gesture Handlers
+    const handleTouchStart = (e) => {
+        touchStartY.current = e.touches[0].clientY;
+        setIsDragging(true);
+    };
+
+    const handleTouchMove = (e) => {
+        const currentY = e.touches[0].clientY;
+        const deltaY = currentY - touchStartY.current;
+        if (deltaY > 0) {
+            setDragY(deltaY);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsDragging(false);
+        if (dragY > 50) {
+            onClose();
+        } else {
+            setDragY(0);
+        }
+    };
+
+    // Reset drag when closed/opened
+    useEffect(() => {
+        if (!isOpen) {
+            setDragY(0);
+            setIsDragging(false);
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         if (isOpen) {
             document.documentElement.style.overflow = "hidden";
             document.body.style.overflow = "hidden";
+            document.body.classList.add("comment-modal-active");
         } else {
             document.documentElement.style.overflow = "";
             document.body.style.overflow = "";
+            document.body.classList.remove("comment-modal-active");
         }
         return () => {
             document.documentElement.style.overflow = "";
             document.body.style.overflow = "";
+            document.body.classList.remove("comment-modal-active");
         };
     }, [isOpen]);
 
@@ -356,8 +393,20 @@ export default function CommentModal({
 
     return ReactDOM.createPortal(
         <div className="comment-modal-backdrop" onClick={onClose}>
-            <div className="comment-modal-container" onClick={(e) => e.stopPropagation()}>
-                <div className="comment-modal-header">
+            <div 
+                className={`comment-modal-container ${isDragging ? 'dragging' : ''}`}
+                onClick={(e) => e.stopPropagation()}
+                style={{ 
+                    transform: dragY > 0 ? `translateY(${dragY}px)` : '',
+                    transition: isDragging ? 'none' : ''
+                }}
+            >
+                <div 
+                    className="comment-modal-header"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
                     <div className="header-drag-handle"></div>
                     <span className="header-title">Comments</span>
                     <button className="close-btn" onClick={onClose}>

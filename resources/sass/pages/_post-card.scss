@@ -1,6 +1,5 @@
-// Manual SCSS only. No imports.
 @use "sass:color";
-@use "../base/variables" as *;
+@import "../base/variables";
 // ==========================================================
 // Post Card
 // ==========================================================
@@ -434,6 +433,11 @@
     cursor: pointer;
     border-radius: $radius;
     transition: all $transition-fast;
+
+    // Prevent text selection and context menu on mobile long-press
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
 
     svg {
         font-size: 1.25em;

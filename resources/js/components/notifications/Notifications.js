@@ -1,52 +1,56 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import api from "../../services/api";
+import { useNotifications } from "../../contexts/NotificationContext";
 import { useToast } from "../../contexts/ToastContext";
-import { HiBell, HiClipboardList, HiChat, HiDocumentAdd } from "react-icons/hi";
+import {
+    HiBell,
+    HiClipboardList,
+    HiChat,
+    HiDocumentAdd,
+    HiCheckCircle,
+    HiClock,
+} from "react-icons/hi";
 import { RiShieldStarFill, RiAlarmWarningFill } from "react-icons/ri";
+
+function timeAgo(dateString) {
+    const now = new Date();
+    const date = new Date(dateString);
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+}
 
 export default function Notifications() {
     const toast = useToast();
-    const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        notifications,
+        loading,
+        markAsRead,
+        markAllAsRead,
+        unreadCount,
+    } = useNotifications();
 
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const fetchNotifications = async () => {
+    const handleMarkAllAsRead = async () => {
         try {
-            const res = await api.get("/notifications");
-            setNotifications(res.data.data);
-        } catch (e) {
-            toast.error("Failed to load notifications.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const markAsRead = async (id) => {
-        try {
-            await api.put(`/notifications/${id}/read`);
-            setNotifications(
-                notifications.map((n) =>
-                    n.id === id ? { ...n, is_read: true } : n,
-                ),
-            );
-        } catch (e) {
-            toast.error("Failed to mark as read.");
-        }
-    };
-
-    const markAllAsRead = async () => {
-        try {
-            await api.put("/notifications/read-all");
-            setNotifications(
-                notifications.map((n) => ({ ...n, is_read: true })),
-            );
-            toast.success("All notifications marked as read.");
+            await markAllAsRead();
+            toast.success("All notifications marked as read!");
         } catch (e) {
             toast.error("Failed to mark all as read.");
+        }
+    };
+
+    const handleMarkAsRead = async (id) => {
+        try {
+            await markAsRead(id);
+        } catch (e) {
+            toast.error("Failed to mark as read.");
         }
     };
 
@@ -76,34 +80,49 @@ export default function Notifications() {
     return (
         <div className="notifications-container">
             <div className="notifications-header">
-                <h2>
-                    <HiBell /> Notifications
-                </h2>
-                {notifications.some((n) => !n.is_read) && (
+                <div className="notif-header-left">
+                    <h2>
+                        <HiBell /> Notifications
+                    </h2>
+                    {unreadCount > 0 && (
+                        <span className="notif-unread-badge">
+                            {unreadCount} unread
+                        </span>
+                    )}
+                </div>
+                {unreadCount > 0 && (
                     <button
-                        className="btn btn-sm btn-outline"
-                        onClick={markAllAsRead}
+                        className="btn-mark-all-read"
+                        onClick={handleMarkAllAsRead}
                     >
-                        Mark all as read
+                        <HiCheckCircle /> Mark all as read
                     </button>
                 )}
             </div>
 
             {notifications.length === 0 ? (
-                <div className="empty-state">
-                    <p>No notifications yet.</p>
+                <div className="notif-empty-state">
+                    <div className="notif-empty-icon">
+                        <HiBell />
+                    </div>
+                    <h3>You're all caught up!</h3>
+                    <p>No notifications to show right now.</p>
                 </div>
             ) : (
                 <div className="notifications-list">
-                    {notifications.map((notification) => (
+                    {notifications.map((notification, index) => (
                         <div
                             key={notification.id}
                             className={`notification-item ${!notification.is_read ? "unread" : ""} ${notification.type === "urgent_post" ? "notification-urgent" : ""}`}
                             onClick={() =>
                                 !notification.is_read &&
-                                markAsRead(notification.id)
+                                handleMarkAsRead(notification.id)
                             }
+                            style={{ animationDelay: `${index * 0.05}s` }}
                         >
+                            {!notification.is_read && (
+                                <span className="notif-unread-dot" />
+                            )}
                             <div
                                 className={`notification-icon ${getTypeInfo(notification.type).className}`}
                             >
@@ -113,17 +132,17 @@ export default function Notifications() {
                                 <strong>{notification.title}</strong>
                                 <p>{notification.message}</p>
                                 <span className="notification-time">
-                                    {new Date(
-                                        notification.created_at,
-                                    ).toLocaleString()}
+                                    <HiClock />
+                                    {timeAgo(notification.created_at)}
                                 </span>
                             </div>
                             {notification.post_id && (
                                 <Link
                                     to={`/posts/${notification.post_id}`}
-                                    className="btn btn-sm btn-outline"
+                                    className="notif-view-btn"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    View Post
+                                    View
                                 </Link>
                             )}
                         </div>

@@ -23,17 +23,19 @@ import {
     FaClock,
     FaSignOutAlt,
     FaEllipsisV,
+    FaCamera,
 } from "react-icons/fa";
 
 export default function UserProfile() {
     const { userId } = useParams();
-    const { user: currentUser, isAdmin } = useAuth();
+    const { user: currentUser, updateProfile, isAdmin } = useAuth();
     const toast = useToast();
 
     const [profileData, setProfileData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("posts");
     const [followLoading, setFollowLoading] = useState(false);
+    const [uploading, setUploading] = useState({ profile: false, cover: false });
     const [followSettings, setFollowSettings] = useState({
         notify: false,
         is_snoozed: false
@@ -42,6 +44,13 @@ export default function UserProfile() {
 
     useEffect(() => {
         fetchUserProfile();
+
+        // Polling for real-time stats/posts updates (every 30 seconds)
+        const pollInterval = setInterval(() => {
+            refreshProfileStats();
+        }, 30000);
+
+        return () => clearInterval(pollInterval);
     }, [userId]);
 
     const fetchUserProfile = async () => {
@@ -55,6 +64,75 @@ export default function UserProfile() {
             toast.error("Failed to load user profile");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const refreshProfileStats = async () => {
+        try {
+            const res = await api.get(`/users/${userId}/profile`);
+            // Only update if we are still on the same profile
+            setProfileData(prev => {
+                if (!prev || prev.user.id !== res.data.user.id) return prev;
+                return {
+                    ...prev,
+                    stats: res.data.stats,
+                    // Update posts if on first page to catch new ones
+                    posts: prev.posts.current_page === 1 ? res.data.posts : prev.posts
+                };
+            });
+        } catch (error) {
+            console.error("Failed to refresh profile stats", error);
+        }
+    };
+
+    const handlePhotoUpload = async (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validations
+        if (!file.type.startsWith('image/')) {
+            toast.error("Please upload an image file");
+            return;
+        }
+        
+        const maxSize = type === 'profile' ? 5 : 8; // MB
+        if (file.size > maxSize * 1024 * 1024) {
+            toast.error(`Image must be less than ${maxSize}MB`);
+            return;
+        }
+
+        setUploading(prev => ({ ...prev, [type]: true }));
+        const formData = new FormData();
+        formData.append('photo', file);
+
+        try {
+            const endpoint = type === 'profile' ? '/users/profile-photo' : '/users/cover-photo';
+            const res = await api.post(endpoint, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            // Update local state
+            setProfileData(prev => ({
+                ...prev,
+                user: {
+                    ...prev.user,
+                    [type === 'profile' ? 'avatar' : 'cover_photo']: res.data[type === 'profile' ? 'avatar' : 'cover_photo']
+                }
+            }));
+
+            // If it's the current user's profile, update the AuthContext
+            if (currentUser?.id === parseInt(userId)) {
+                updateProfile({
+                    ...currentUser,
+                    [type === 'profile' ? 'avatar' : 'cover_photo']: res.data[type === 'profile' ? 'avatar' : 'cover_photo']
+                });
+            }
+
+            toast.success(res.data.message);
+        } catch (error) {
+            toast.error(error.response?.data?.error || `Failed to upload ${type} photo`);
+        } finally {
+            setUploading(prev => ({ ...prev, [type]: false }));
         }
     };
 
@@ -154,19 +232,52 @@ export default function UserProfile() {
         <div className={`user-profile ${isAdminView ? 'admin-view' : ''}`}>
             {/* Profile Cover Section */}
             <div className="profile-header">
-                <div className="profile-cover">
-                    {/* Cover photo background with gradient */}
+                <div 
+                    className="profile-cover"
+                    style={user.cover_photo ? { backgroundImage: `url(${user.cover_photo})`, backgroundSize: 'cover', backgroundPosition: 'center' } : {}}
+                >
+                    {isOwnProfile && (
+                        <div className="cover-upload-trigger">
+                            <input 
+                                type="file" 
+                                id="cover-upload" 
+                                hidden 
+                                accept="image/*" 
+                                onChange={(e) => handlePhotoUpload(e, 'cover')} 
+                            />
+                            <label htmlFor="cover-upload" className="upload-btn">
+                                <FaCamera /> {uploading.cover ? "Uploading..." : "Change Cover"}
+                            </label>
+                        </div>
+                    )}
                 </div>
 
                 <div className="profile-info">
-                    <div className="profile-avatar">
-                        {user.avatar ? (
-                            <img src={user.avatar} alt={user.name} />
-                        ) : (
-                            <div className="avatar-placeholder">
-                                <FaUser />
-                            </div>
-                        )}
+                    <div className="profile-avatar-wrapper">
+                        <div className="profile-avatar">
+                            {user.avatar ? (
+                                <img src={user.avatar} alt={user.name} />
+                            ) : (
+                                <div className="avatar-placeholder">
+                                    <FaUser />
+                                </div>
+                            )}
+                            {isOwnProfile && (
+                                <div className="avatar-upload-trigger">
+                                    <input 
+                                        type="file" 
+                                        id="avatar-upload" 
+                                        hidden 
+                                        accept="image/*" 
+                                        onChange={(e) => handlePhotoUpload(e, 'profile')} 
+                                    />
+                                    <label htmlFor="avatar-upload" className="camera-icon">
+                                        <FaCamera />
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+                        {uploading.profile && <div className="avatar-upload-loading">...</div>}
                     </div>
 
                     <div className="profile-details-container">
@@ -191,7 +302,7 @@ export default function UserProfile() {
                             </div>
                             <span className="stat-dot">·</span>
                             <div className="stat-unit">
-                                <span className="stat-value">{posts.length}</span>
+                                <span className="stat-value">{stats.posts_count}</span>
                                 <span className="stat-label">posts</span>
                             </div>
                         </div>

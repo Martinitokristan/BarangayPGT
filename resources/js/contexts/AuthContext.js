@@ -52,9 +52,15 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
+    const updateProfile = (updatedUser) => {
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+    };
+
     const value = {
         user,
         setUser,
+        updateProfile,
         login,
         register,
         logout,

@@ -14,6 +14,15 @@ class UserProfileController extends Controller
      */
     public function show(Request $request, User $user)
     {
+        // Block residents from viewing admin profiles
+        $currentUser = $request->user();
+        if ($user->role === 'admin' && (!$currentUser || $currentUser->role !== 'admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Admin profiles are private and cannot be visited by residents.'
+            ], 403);
+        }
+
         $user->load(['barangay', 'followers.follower', 'following.following']);
         
         // Get user's posts
@@ -47,6 +56,7 @@ class UserProfileController extends Controller
             'stats' => [
                 'followers_count' => $user->followersCount(),
                 'following_count' => $user->followingCount(),
+                'posts_count' => $user->posts()->count(),
                 'joined_date' => $user->created_at->format('M d, Y'),
             ],
             'is_following' => $isFollowing,
@@ -147,5 +157,84 @@ class UserProfileController extends Controller
             'snoozed_until' => $follow->snoozed_until->toIso8601String(),
             'message' => 'Snoozed for 30 days'
         ]);
+    }
+    /**
+     * Update user profile photo
+     */
+    public function updateProfilePhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|max:5120', // 5MB
+        ]);
+
+        $user = $request->user();
+        
+        if ($request->hasFile('photo')) {
+            // Delete old avatar if it's not the default (if we had one)
+            if ($user->avatar && str_contains($user->avatar, 'avatars/')) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+            }
+
+            $path = $request->file('photo')->store('avatars', 'public');
+            $user->update(['avatar' => '/storage/' . $path]);
+
+            return response()->json([
+                'success' => true,
+                'avatar' => $user->avatar,
+                'message' => 'Profile photo updated successfully'
+            ]);
+        }
+
+        return response()->json(['error' => 'No photo provided'], 400);
+    }
+
+    /**
+     * Update user cover photo
+     */
+    public function updateCoverPhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|max:8192', // 8MB for covers
+        ]);
+
+        $user = $request->user();
+
+        if ($request->hasFile('photo')) {
+            // Delete old cover
+            if ($user->cover_photo) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete(str_replace('/storage/', '', $user->cover_photo));
+            }
+
+            $path = $request->file('photo')->store('covers', 'public');
+            $user->update(['cover_photo' => '/storage/' . $path]);
+
+            return response()->json([
+                'success' => true,
+                'cover_photo' => $user->cover_photo,
+                'message' => 'Cover photo updated successfully'
+            ]);
+        }
+
+        return response()->json(['error' => 'No photo provided'], 400);
+    }
+    /**
+     * Search for users by name in the same barangay
+     */
+    public function search(Request $request)
+    {
+        $query = $request->get('query');
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $user = $request->user();
+        $users = User::where('name', 'like', "%{$query}%")
+            ->where('barangay_id', $user->barangay_id)
+            ->where('role', '!=', 'admin')
+            ->select('id', 'name', 'avatar', 'role')
+            ->limit(10)
+            ->get();
+
+        return response()->json($users);
     }
 }

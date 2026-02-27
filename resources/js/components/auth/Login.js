@@ -34,8 +34,8 @@ export default function Login() {
                     <span className="auth-icon">
                         <RiShieldStarFill />
                     </span>
-                    <h1>Barangay Online Sumbongan</h1>
-                    <p>Sign in to your account</p>
+                    <h1>Barangay Online</h1>
+                    <p>Welcome back! Please sign in.</p>
                 </div>
 
                 {error && <div className="alert alert-error">{error}</div>}
@@ -74,7 +74,11 @@ export default function Login() {
                         className="btn btn-primary btn-block"
                         disabled={loading}
                     >
-                        {loading ? "Signing in..." : "Sign In"}
+                        {loading ? (
+                            <span className="loading-spinner">Signing in...</span>
+                        ) : (
+                            "Sign In to Your Account"
+                        )}
                     </button>
                 </form>
 

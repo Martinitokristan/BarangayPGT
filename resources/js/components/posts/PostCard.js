@@ -20,6 +20,7 @@ import {
     HiExternalLink,
     HiReply,
     HiX,
+    HiOutlineThumbUp,
 } from "react-icons/hi";
 import { RiAlarmWarningFill, RiShieldStarFill } from "react-icons/ri";
 import {
@@ -459,13 +460,14 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                         onMouseLeave={handleMouseLeave}
                         onTouchStart={handlePressStart}
                         onTouchEnd={handlePressEnd}
+                        onContextMenu={(e) => e.preventDefault()}
                     >
                         {userReaction ? (
                             <span className="action-bar-emoji">
                                 {REACTION_CONFIG[userReaction].emoji}
                             </span>
                         ) : (
-                            <HiExclamation />
+                            <HiOutlineThumbUp />
                         )}
                         <span style={userReaction ? { fontWeight: '700' } : {}}>
                             {userReaction

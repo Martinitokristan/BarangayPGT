@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { ToastProvider } from "../contexts/ToastContext";
+import { NotificationProvider } from "../contexts/NotificationContext";
 import Navbar from "./layout/Navbar";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
@@ -22,16 +23,8 @@ import AdminUsers from "./admin/AdminUsers";
 import SmsSender from "./admin/sms/SmsSender";
 import Notifications from "./notifications/Notifications";
 import UserProfile from "./users/UserProfile";
+import EventList from "./events/EventList";
 import AdminLayout from "./layout/AdminLayout";
-import "../../sass/pages/_feed.scss";
-import "../../sass/pages/_post-card.scss";
-import "../../sass/pages/_post-detail.scss";
-import "../../sass/pages/_create-post.scss";
-import "../../sass/pages/_edit-post.scss";
-import "../../sass/pages/_admin-dashboard.scss";
-import "../../sass/pages/_admin-posts.scss";
-import "../../sass/pages/_user-profile.scss";
-import "../../sass/pages/_notifications.scss";
 
 function PrivateRoute({ children }) {
     const { user, loading } = useAuth();
@@ -145,6 +138,14 @@ function AppRoutes() {
                 }
             />
             <Route
+                path="/events"
+                element={
+                    <PrivateRoute>
+                        <EventList />
+                    </PrivateRoute>
+                }
+            />
+            <Route
                 path="/admin/sms"
                 element={
                     <AdminRoute>
@@ -190,7 +191,9 @@ function MainApp() {
         <Router>
             <AuthProvider>
                 <ToastProvider>
-                    <AppShell />
+                    <NotificationProvider>
+                        <AppShell />
+                    </NotificationProvider>
                 </ToastProvider>
             </AuthProvider>
         </Router>

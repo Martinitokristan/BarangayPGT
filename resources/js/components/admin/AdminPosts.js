@@ -2,14 +2,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
-import { RiShieldStarFill } from "react-icons/ri";
-import { HiChevronLeft, HiChevronRight, HiEye } from "react-icons/hi";
-
-const STATUS_LABELS = {
-    pending: "Pending",
-    in_progress: "In Progress",
-    resolved: "Resolved",
-};
+import { RiShieldStarFill, RiSearchLine, RiFilter3Fill } from "react-icons/ri";
+import { HiChevronLeft, HiChevronRight, HiEye, HiBadgeCheck, HiClock, HiUser, HiTag } from "react-icons/hi";
 
 export default function AdminPosts() {
     const toast = useToast();
@@ -53,8 +47,9 @@ export default function AdminPosts() {
     const handleStatusChange = async (postId, status) => {
         try {
             await api.put(`/posts/${postId}`, { status });
-            fetchPosts();
-            toast.success("Status updated successfully!");
+            // Optimistic update
+            setPosts(posts.map(p => p.id === postId ? { ...p, status } : p));
+            toast.success("Status updated!");
         } catch (e) {
             toast.error("Failed to update status.");
         }
@@ -69,23 +64,25 @@ export default function AdminPosts() {
             </div>
 
             <div className="feed-filters">
-                <input
-                    type="text"
-                    name="search"
-                    placeholder="Search posts..."
-                    value={filters.search}
-                    onChange={handleFilterChange}
-                    className="search-input"
-                />
+                <div className="search-box" style={{ position: 'relative' }}>
+                    <input
+                        type="text"
+                        name="search"
+                        placeholder="Search title or content..."
+                        value={filters.search}
+                        onChange={handleFilterChange}
+                        className="search-input"
+                    />
+                </div>
                 <select
                     name="urgency_level"
                     value={filters.urgency_level}
                     onChange={handleFilterChange}
                 >
                     <option value="">All Urgency</option>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
+                    <option value="high">High Urgency</option>
+                    <option value="medium">Medium Urgency</option>
+                    <option value="low">Low Urgency</option>
                 </select>
                 <select
                     name="status"
@@ -112,20 +109,21 @@ export default function AdminPosts() {
             </div>
 
             {loading ? (
-                <div className="loading-spinner">Loading...</div>
+                <div className="text-center py-5">
+                    <div className="spinner-border text-primary"></div>
+                    <p className="mt-2 text-muted">Loading posts...</p>
+                </div>
             ) : (
                 <>
+                    {/* Desktop View: Table */}
                     <div className="admin-table-wrapper">
                         <table className="admin-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Title</th>
+                                    <th>Post Info</th>
                                     <th>Author</th>
-                                    <th>Purpose</th>
-                                    <th>Urgency</th>
+                                    <th>Details</th>
                                     <th>Status</th>
-                                    <th>Date</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -133,59 +131,47 @@ export default function AdminPosts() {
                                 {posts.map((post) => (
                                     <tr
                                         key={post.id}
-                                        className={
-                                            post.urgency_level === "high"
-                                                ? "row-urgent"
-                                                : ""
-                                        }
+                                        className={post.urgency_level === "high" ? "row-urgent" : ""}
                                     >
-                                        <td>{post.id}</td>
                                         <td>
-                                            <Link to={`/posts/${post.id}`}>
-                                                {post.title}
-                                            </Link>
+                                            <div style={{ fontWeight: '700' }}>
+                                                <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                ID: {post.id} • {new Date(post.created_at).toLocaleDateString()}
+                                            </div>
                                         </td>
-                                        <td>{post.user?.name}</td>
-                                        <td>{post.purpose}</td>
                                         <td>
-                                            <span
-                                                className={`badge-urgency urgency-${post.urgency_level}`}
-                                            >
-                                                {post.urgency_level.toUpperCase()}
-                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div className="avatar-xs" style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                                                    {post.user?.name?.charAt(0)}
+                                                </div>
+                                                {post.user?.name}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <span className={`badge-urgency urgency-${post.urgency_level}`}>
+                                                    {post.urgency_level.toUpperCase()}
+                                                </span>
+                                                <span className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>
+                                                    {post.purpose}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td>
                                             <select
                                                 value={post.status}
-                                                onChange={(e) =>
-                                                    handleStatusChange(
-                                                        post.id,
-                                                        e.target.value,
-                                                    )
-                                                }
+                                                onChange={(e) => handleStatusChange(post.id, e.target.value)}
                                                 className={`status-select status-${post.status}`}
                                             >
-                                                <option value="pending">
-                                                    Pending
-                                                </option>
-                                                <option value="in_progress">
-                                                    In Progress
-                                                </option>
-                                                <option value="resolved">
-                                                    Resolved
-                                                </option>
+                                                <option value="pending">Pending</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="resolved">Resolved</option>
                                             </select>
                                         </td>
                                         <td>
-                                            {new Date(
-                                                post.created_at,
-                                            ).toLocaleDateString()}
-                                        </td>
-                                        <td>
-                                            <Link
-                                                to={`/posts/${post.id}`}
-                                                className="btn btn-primary"
-                                            >
+                                            <Link to={`/posts/${post.id}`} className="btn btn-sm btn-outline-primary">
                                                 <HiEye /> View
                                             </Link>
                                         </td>
@@ -195,24 +181,71 @@ export default function AdminPosts() {
                         </table>
                     </div>
 
+                    {/* Mobile View: Cards */}
+                    <div className="mobile-posts-grid">
+                        {posts.map((post) => (
+                            <div key={post.id} className="post-admin-card">
+                                <div className="card-header-row">
+                                    <div className="post-id-date">
+                                        <span className="p-id">#{post.id}</span>
+                                        <span className="p-date">{new Date(post.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <span className={`badge-urgency urgency-${post.urgency_level}`}>
+                                        {post.urgency_level.toUpperCase()}
+                                    </span>
+                                </div>
+                                <h4 className="card-title">
+                                    <Link to={`/posts/${post.id}`}>{post.title}</Link>
+                                </h4>
+                                <div className="card-meta-grid">
+                                    <div className="meta-item">
+                                        <label><HiUser size={12}/> AUTHOR</label>
+                                        <span title={post.user?.name}>{post.user?.name}</span>
+                                    </div>
+                                    <div className="meta-item">
+                                        <label><HiTag size={12}/> TYPE</label>
+                                        <span style={{ textTransform: 'capitalize' }}>{post.purpose}</span>
+                                    </div>
+                                </div>
+                                <div className="card-actions-row">
+                                    <select
+                                        value={post.status}
+                                        onChange={(e) => handleStatusChange(post.id, e.target.value)}
+                                        className={`status-select status-${post.status}`}
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="resolved">Resolved</option>
+                                    </select>
+                                    <Link to={`/posts/${post.id}`} className="btn btn-primary btn-view">
+                                        View
+                                    </Link>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
                     {posts.length === 0 && (
-                        <div className="empty-state">No posts found.</div>
+                        <div className="empty-state py-5 text-center">
+                            <RiSearchLine size={48} className="text-muted mb-3 opacity-25" />
+                            <p className="text-muted">No posts found matching your filters.</p>
+                        </div>
                     )}
 
                     {lastPage > 1 && (
-                        <div className="pagination">
+                        <div className="pagination mt-4">
                             <button
-                                className="btn"
+                                className="btn btn-outline-secondary"
                                 disabled={page <= 1}
                                 onClick={() => setPage((p) => p - 1)}
                             >
-                                <HiChevronLeft /> Previous
+                                <HiChevronLeft /> Prev
                             </button>
-                            <span>
-                                Page {page} of {lastPage}
+                            <span className="mx-3 align-self-center">
+                                {page} / {lastPage}
                             </span>
                             <button
-                                className="btn"
+                                className="btn btn-outline-secondary"
                                 disabled={page >= lastPage}
                                 onClick={() => setPage((p) => p + 1)}
                             >

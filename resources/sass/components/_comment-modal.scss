@@ -27,6 +27,11 @@
     box-shadow: $shadow-lg;
     animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
     border: 1px solid $border-light;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+
+    &.dragging {
+        transition: none;
+    }
 
     @media (min-width: 768px) {
         height: 80vh;
@@ -43,6 +48,9 @@
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    cursor: grab;
+    user-select: none;
+    touch-action: none; // Prevent default scroll when dragging header
     
     .header-drag-handle {
         position: absolute;
@@ -76,6 +84,10 @@
         align-items: center;
         justify-content: center;
         transition: color $transition-fast;
+
+        @media (max-width: 767px) {
+            display: none;
+        }
 
         &:hover {
             color: $text-primary;

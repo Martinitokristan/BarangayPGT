@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ReactionController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\UserProfileController;
+use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Admin\AdminSmsController;
 
 /*
@@ -56,11 +57,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/sms/send', [\App\Http\Controllers\Api\SmsController::class, 'send']);
 
     // User Profiles
+    Route::get('/users/search', [UserProfileController::class, 'search']);
     Route::get('/users/{user}/profile', [UserProfileController::class, 'show']);
     Route::get('/users/{user}/posts', [UserProfileController::class, 'posts']);
     Route::post('/users/{user}/follow', [UserProfileController::class, 'follow']);
     Route::post('/users/{user}/follow/notifications', [UserProfileController::class, 'toggleNotifications']);
     Route::post('/users/{user}/follow/snooze', [UserProfileController::class, 'snooze']);
+    Route::post('/users/profile-photo', [UserProfileController::class, 'updateProfilePhoto']);
+    Route::post('/users/cover-photo', [UserProfileController::class, 'updateCoverPhoto']);
+
+    // Events
+    Route::apiResource('events', EventController::class);
 
     // Admin routes
     Route::middleware('admin')->prefix('admin')->group(function () {

@@ -29,4 +29,15 @@
 @import "layout/admin-sidebar";
 
 // Pages
-// Removed page-level imports. These are now imported in their respective JS files.
+@import "pages/auth";
+@import "pages/feed";
+@import "pages/create-post";
+@import "pages/edit-post";
+@import "pages/post-card";
+@import "pages/post-detail";
+@import "pages/user-profile";
+@import "pages/notifications";
+@import "pages/admin-dashboard";
+@import "pages/admin-posts";
+@import "pages/events";
+@import "pages/sms";

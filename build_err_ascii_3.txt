@@ -1,0 +1,125 @@
+i Compiling Mix
+
+[1;1H[0J
+                         
+   Laravel Mix v6.0.49   
+                         
+
+??? Compiled Successfully in 3811ms
+[90m????????????????????????????????????????????????????????????????????????????????????????????????????????????[39m[90m????????????????????????????????????[39m
+[90m???[39m                              File [90m???[39m Size     [90m???[39m
+[90m????????????????????????????????????????????????????????????????????????????????????????????????????????????[39m[90m????????????????????????????????????[39m
+[90m???[39m                        /js/app.js [90m???[39m 7.11 MiB [90m???[39m
+[90m???[39m                       css/app.css [90m???[39m 85.8 KiB [90m???[39m
+[90m????????????????????????????????????????????????????????????????????????????????????????????????????????????[39m[90m????????????????????????????????????[39m
+??? Mix: Compiled successfully in 4.68s
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_admin-dashboard.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_admin-dashboard.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_admin-dashboard.scss:1:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+1 | @import "../base/variables";
+
+
+resources\sass\pages\_admin-dashboard.scss 2:9  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_create-post.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_create-post.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 5, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_create-post.scss:5:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+5 | @import "../base/variables";
+
+
+resources\sass\pages\_create-post.scss 6:9  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_feed.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_feed.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 0, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_feed.scss:0:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+0 | @import "../base/variables";
+
+
+resources\sass\pages\_feed.scss 1:9  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_notifications.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_notifications.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_notifications.scss:1:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+1 | @import "../base/variables";
+
+
+resources\sass\pages\_notifications.scss 2:9  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_post-card.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_post-card.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_post-card.scss:1:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+1 | @import "../base/variables";
+
+
+resources\sass\pages\_post-card.scss 2:9  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_post-card.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_post-card.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 681, column 34 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_post-card.scss:681:34:
+Global built-in functions are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+[1m[33mUse color.adjust instead[39m[22m[1m.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+681 |                 background-color: darken($primary-light, 5%);
+
+
+resources\sass\pages\_post-card.scss 682:35  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_post-card.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_post-card.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 681, column 34 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_post-card.scss:681:34:
+darken() is [1m[33mdeprecated[39m[22m[1m. Suggestions:
+
+color.scale($color, $lightness: -5.3911205074%)
+color.adjust($color, $lightness: -5%)
+
+More info: https://sass-lang.com/d/color-functions
+
+681 |                 background-color: darken($primary-light, 5%);
+
+
+resources\sass\pages\_post-card.scss 682:35  root stylesheet
+[39m[22m
+
+[1m[33mWARNING[39m[22m in [1m./resources/sass/pages/_post-detail.scss[39m[22m (./node_modules/css-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[1]!./node_modules/postcss-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[2]!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[7].oneOf[1].use[3]!./resources/sass/pages/_post-detail.scss)
+[1mModule Warning (from ./node_modules/sass-loader/dist/cjs.js):
+Deprecation Warning on line 1, column 8 of file:///C:/xampp/htdocs/barangayPGT/resources/sass/pages/_post-detail.scss:1:8:
+Sass @import rules are [1m[33mdeprecated[39m[22m[1m and will be removed in Dart Sass 3.0.0.
+
+More info and automated migrator: https://sass-lang.com/d/import
+
+1 | @import "../base/variables";
+
+
+resources\sass\pages\_post-detail.scss 2:9  root stylesheet
+[39m[22m
+
+[1m[33m16 WARNINGS in child compilations (Use 'stats.children: true' resp. '--stats-children' for more details)[39m[22m
+webpack compiled with [1m[33m24 warnings[39m[22m

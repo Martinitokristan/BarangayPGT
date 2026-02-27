@@ -11,6 +11,7 @@ import {
     HiLogout,
     HiArrowLeft,
     HiMenu,
+    HiCalendar,
 } from "react-icons/hi";
 import { RiShieldStarFill } from "react-icons/ri";
 
@@ -59,11 +60,15 @@ export default function AdminLayout({ children }) {
             icon: <HiBell />, // You can use a better SMS icon if available
             label: "SMS Management",
         },
+        {
+            to: "/events",
+            icon: <HiCalendar />,
+            label: "Manage Events",
+        },
     ];
 
     const quickLinks = [
         { to: "/", icon: <HiHome />, label: "Feed" },
-        { to: "/posts/create", icon: <HiPlusCircle />, label: "New Post" },
         {
             to: "/notifications",
             icon: <HiBell />,
@@ -172,10 +177,7 @@ export default function AdminLayout({ children }) {
                     >
                         <HiMenu />
                     </button>
-                    <Link to="/" className="topbar-back" title="Back to Feed">
-                        <HiArrowLeft />
-                        <span>Back to Site</span>
-                    </Link>
+
                 </header>
                 <div className="admin-content">{children}</div>
             </div>

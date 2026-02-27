@@ -9,6 +9,7 @@ import {
     HiClock,
     HiCheckCircle,
     HiTrendingUp,
+    HiCalendar,
 } from "react-icons/hi";
 import {
     Chart as ChartJS,
@@ -16,16 +17,22 @@ import {
     CategoryScale,
     LinearScale,
     BarElement,
+    LineElement,
+    PointElement,
+    Filler,
     Tooltip,
     Legend,
 } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
+import { Doughnut, Bar, Line } from "react-chartjs-2";
 
 ChartJS.register(
     ArcElement,
     CategoryScale,
     LinearScale,
     BarElement,
+    LineElement,
+    PointElement,
+    Filler,
     Tooltip,
     Legend,
 );
@@ -51,16 +58,24 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         fetchDashboard();
+
+        // Polling for real-time stats updates (every 30 seconds)
+        const pollInterval = setInterval(() => {
+            fetchDashboard(true); // pass true to indicate it's a silent background refresh
+        }, 30000);
+
+        return () => clearInterval(pollInterval);
     }, []);
 
-    const fetchDashboard = async () => {
+    const fetchDashboard = async (isBackground = false) => {
+        if (!isBackground) setLoading(true);
         try {
             const res = await api.get("/admin/dashboard");
             setStats(res.data);
         } catch (e) {
-            toast.error("Failed to load dashboard data.");
+            if (!isBackground) toast.error("Failed to load dashboard data.");
         } finally {
-            setLoading(false);
+            if (!isBackground) setLoading(false);
         }
     };
 
@@ -117,7 +132,7 @@ export default function AdminDashboard() {
         ],
     };
 
-    // Chart data for Status Breakdown (Bar)
+    // Chart data for Status Breakdown (Area/Line)
     const statusChartData = {
         labels: ["Pending", "In Progress", "Resolved"],
         datasets: [
@@ -128,8 +143,14 @@ export default function AdminDashboard() {
                     stats.in_progress_posts || 0,
                     stats.resolved_posts || 0,
                 ],
-                backgroundColor: ["#f39c12", "#3498db", "#2ecc71"],
-                borderRadius: 6,
+                borderColor: "#2ecc71",
+                backgroundColor: 'rgba(46, 204, 113, 0.2)', // Light green fill
+                fill: true,
+                tension: 0.4, // Smooth curve
+                pointBackgroundColor: "#2ecc71",
+                pointBorderColor: "#fff",
+                pointBorderWidth: 2,
+                pointRadius: 4,
             },
         ],
     };
@@ -145,18 +166,35 @@ export default function AdminDashboard() {
         },
     };
 
-    const barOptions = {
+    const areaOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+            },
         },
         scales: {
             y: {
                 beginAtZero: true,
                 ticks: { stepSize: 1 },
+                grid: {
+                    color: 'rgba(0, 0, 0, 0.05)',
+                }
             },
+            x: {
+                grid: {
+                    display: false,
+                }
+            }
         },
+        interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+        }
     };
 
     return (
@@ -165,9 +203,14 @@ export default function AdminDashboard() {
                 <h2>
                     <RiShieldStarFill /> Admin Dashboard
                 </h2>
-                <Link to="/admin/posts" className="btn btn-primary">
-                    <HiClipboardList /> Manage All Posts
-                </Link>
+                <div className="dashboard-actions">
+                    <Link to="/admin/posts" className="btn btn-primary">
+                        <HiClipboardList /> Manage All Posts
+                    </Link>
+                    <Link to="/events" className="btn btn-primary">
+                        <HiCalendar /> Manage Events
+                    </Link>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -235,7 +278,7 @@ export default function AdminDashboard() {
                 <div className="panel chart-panel">
                     <h3>Status Overview</h3>
                     <div className="chart-wrapper">
-                        <Bar data={statusChartData} options={barOptions} />
+                        <Line data={statusChartData} options={areaOptions} />
                     </div>
                 </div>
             </div>

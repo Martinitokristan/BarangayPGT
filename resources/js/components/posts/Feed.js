@@ -91,7 +91,6 @@ export default function Feed() {
         <div className="feed-container modern-feed">
             {/* ... */}
             <div className="feed-header modern-feed-header">
-                <h2 className="modern-feed-title">Community Feed</h2>
             </div>
             {/* ... */}
             <div className="create-post-bar" onClick={handleCreatePostClick}>
