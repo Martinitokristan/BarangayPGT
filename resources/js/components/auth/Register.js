@@ -170,10 +170,14 @@ export default function Register() {
                 }
             });
             const result = await register(formData);
-            // Registration successful — redirect to verify-pending so the user
-            // sees the "check your email" page. The token returned by the API
-            // is already stored in AuthContext so PrivateRoute lets them through.
-            navigate("/verify-pending");
+            // Registration successful — redirect to login with success message
+            navigate("/login", {
+                state: {
+                    registrationSuccess:
+                        result.message ||
+                        "Registration successful! Please check your email to verify your account, then log in.",
+                },
+            });
         } catch (err) {
             if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);
