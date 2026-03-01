@@ -32,9 +32,8 @@ class BrevoApiMailer
     {
         $html = '
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-            <h2 style="color:#1d4ed8;">Verify Your Email - BarangayPGT</h2>
-            <p>Hello, <strong>' . e($toName) . '</strong>!</p>
-            <p>Please click the button below to verify your email address and activate your account.</p>
+            <h2 style="color:#1d4ed8;">Hello, ' . e($toName) . '!</h2>
+            <p>Thank you for registering. Please click the button below to verify your email address and activate your account.</p>
             <div style="text-align:center;margin:32px 0;">
                 <a href="' . $verifyUrl . '"
                    style="background:#1d4ed8;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-size:16px;">
