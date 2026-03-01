@@ -1,4 +1,4 @@
 providers = ["php"]
 
-[providers.php]
-version = "8.2"
+[variables]
+NIXPACKS_PHP_PACKAGE = "php82"
