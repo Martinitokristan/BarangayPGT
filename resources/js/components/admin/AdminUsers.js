@@ -10,6 +10,7 @@ export default function AdminUsers() {
     const [filters, setFilters] = useState({
         role: "",
         barangay_id: "",
+        is_approved: "",
     });
     const [barangays, setBarangays] = useState([]);
 
@@ -25,6 +26,8 @@ export default function AdminUsers() {
             if (filters.role) params.append("role", filters.role);
             if (filters.barangay_id)
                 params.append("barangay_id", filters.barangay_id);
+            if (filters.is_approved)
+                params.append("is_approved", filters.is_approved);
 
             const res = await api.get(`/admin/users?${params}`);
             setUsers(res.data.data);
@@ -54,6 +57,28 @@ export default function AdminUsers() {
         }
     };
 
+    const handleApprove = async (user) => {
+        if (!window.confirm(`Are you sure you want to approve ${user.name}?`)) return;
+        try {
+            await api.post(`/admin/users/${user.id}/approve`);
+            toast.success("User approved!");
+            fetchUsers();
+        } catch (error) {
+            toast.error("Failed to approve user");
+        }
+    };
+
+    const handleReject = async (user) => {
+        if (!window.confirm(`Are you sure you want to reject and delete ${user.name}?`)) return;
+        try {
+            await api.delete(`/admin/users/${user.id}/reject`);
+            toast.success("User rejected and removed.");
+            fetchUsers();
+        } catch (error) {
+            toast.error("Failed to reject user");
+        }
+    };
+
     if (loading) {
         return <div className="loading-spinner">Loading users...</div>;
     }
@@ -75,6 +100,18 @@ export default function AdminUsers() {
                         <option value="">All Roles</option>
                         <option value="resident">Residents</option>
                         <option value="admin">Admins</option>
+                    </select>
+
+                    <select
+                        value={filters.is_approved}
+                        onChange={(e) =>
+                            setFilters({ ...filters, is_approved: e.target.value })
+                        }
+                        className="form-select"
+                    >
+                        <option value="">All Statuses</option>
+                        <option value="1">Approved</option>
+                        <option value="0">Pending</option>
                     </select>
 
                     <select
@@ -105,6 +142,8 @@ export default function AdminUsers() {
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Role</th>
+                            <th>Status</th>
+                            <th>IDs</th>
                             <th>Barangay</th>
                             <th>Joined</th>
                             <th>Actions</th>
@@ -156,6 +195,23 @@ export default function AdminUsers() {
                                         <option value="admin">Admin</option>
                                     </select>
                                 </td>
+                                <td>
+                                    {user.is_approved ? (
+                                        <span className="badge badge-success">Approved</span>
+                                    ) : (
+                                        <span className="badge badge-warning">Pending</span>
+                                    )}
+                                </td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                        {user.id_front_path && (
+                                            <a href={`/storage/${user.id_front_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem' }}>Front</a>
+                                        )}
+                                        {user.id_back_path && (
+                                            <a href={`/storage/${user.id_back_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem' }}>Back</a>
+                                        )}
+                                    </div>
+                                </td>
                                 <td>{user.barangay?.name || "N/A"}</td>
                                 <td>
                                     {new Date(
@@ -164,6 +220,12 @@ export default function AdminUsers() {
                                 </td>
                                 <td>
                                     <div className="action-buttons">
+                                        {!user.is_approved && (
+                                            <>
+                                                <button className="btn btn-sm btn-primary" onClick={() => handleApprove(user)}>Approve</button>
+                                                <button className="btn btn-sm btn-danger" onClick={() => handleReject(user)}>Reject</button>
+                                            </>
+                                        )}
                                         <AdminSmsButton user={user} />
                                     </div>
                                 </td>

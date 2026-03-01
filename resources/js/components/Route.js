@@ -13,6 +13,13 @@ import { NotificationProvider } from "../contexts/NotificationContext";
 import Navbar from "./layout/Navbar";
 import Login from "./auth/Login";
 import Register from "./auth/Register";
+import VerificationPending from "./auth/VerificationPending";
+import OtpVerification from "./auth/OtpVerification";
+import VerifyEmail from "./auth/VerifyEmail";
+import ForgotPassword from "./auth/ForgotPassword";
+import ResetPassword from "./auth/ResetPassword";
+import ResetPasswordOtp from "./auth/ResetPasswordOtp";
+import Unauthorized401 from "./auth/Unauthorized401";
 import Feed from "./posts/Feed";
 import PostDetail from "./posts/PostDetail";
 import CreatePost from "./posts/CreatePost";
@@ -27,16 +34,48 @@ import EventList from "./events/EventList";
 import AdminLayout from "./layout/AdminLayout";
 
 function PrivateRoute({ children }) {
-    const { user, loading } = useAuth();
+    const { user, loading, deviceTrusted, pendingAuth } = useAuth();
+    const location = useLocation();
+
     if (loading) return <div className="loading-screen">Loading...</div>;
-    return user ? children : <Navigate to="/login" />;
+
+    // If not logged in AND not in pending verification, go to login
+    if (!user && !pendingAuth) {
+        return <Navigate to="/login" />;
+    }
+
+    // Force residents to email verification if they have an unverified email
+    // Admins are always exempt
+    const isResident =
+        (user && user.role === "resident") ||
+        (pendingAuth && pendingAuth.user.role === "resident");
+
+    if (isResident) {
+        // Condition 1: Untrusted Device Login
+        if (pendingAuth && location.pathname !== "/device-verification") {
+            return <Navigate to="/device-verification" />;
+        }
+
+        // Condition 2: Just Registered, waiting for email link
+        if (
+            user &&
+            !user.email_verified_at &&
+            location.pathname !== "/verify-pending"
+        ) {
+            return <Navigate to="/verify-pending" />;
+        }
+    }
+
+    return children;
 }
 
 function AdminRoute({ children }) {
     const { user, isAdmin, loading } = useAuth();
     if (loading) return <div className="loading-screen">Loading...</div>;
     if (!user) return <Navigate to="/login" />;
-    if (!isAdmin) return <Navigate to="/" />;
+    // Security hardened: show a clear 401 page instead of silently
+    // redirecting residents back to "/" — they should know access is denied.
+    if (!isAdmin) return <Unauthorized401 />;
     return children;
 }
 
@@ -62,6 +101,56 @@ function AppRoutes() {
                 element={
                     <GuestRoute>
                         <Register />
+                    </GuestRoute>
+                }
+            />
+            <Route
+                path="/device-verification"
+                element={
+                    <PrivateRoute>
+                        <OtpVerification />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/verify-pending"
+                element={
+                    <PrivateRoute>
+                        <VerificationPending />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/verify-email"
+                element={
+                    <GuestRoute>
+                        <VerifyEmail />
+                    </GuestRoute>
+                }
+            />
+            {/* ── Password Reset (public / guest routes) ── */}
+            <Route
+                path="/forgot-password"
+                element={
+                    <GuestRoute>
+                        <ForgotPassword />
+                    </GuestRoute>
+                }
+            />
+            <Route
+                path="/reset-password"
+                element={
+                    <GuestRoute>
+                        <ResetPassword />
+                    </GuestRoute>
+                }
+            />
+            {/* Phone OTP reset — redirect target after SMS code is sent */}
+            <Route
+                path="/reset-password-otp"
+                element={
+                    <GuestRoute>
+                        <ResetPasswordOtp />
                     </GuestRoute>
                 }
             />
@@ -159,14 +248,34 @@ function AppRoutes() {
 }
 
 function AppShell() {
-    const { user, isAdmin, loading } = useAuth();
+    const { user, isAdmin, loading, pendingAuth } = useAuth();
     const location = useLocation();
-    const isGuestPage =
-        location.pathname === "/login" || location.pathname === "/register";
+    const isVerificationPage =
+        location.pathname === "/verify-pending" ||
+        location.pathname === "/device-verification";
+    const isGuestPage = [
+        "/login",
+        "/register",
+        "/forgot-password",
+        "/reset-password",
+        "/reset-password-otp",
+    ].includes(location.pathname);
 
     if (loading) return <div className="loading-screen">Loading...</div>;
 
-    // Admin users: sidebar layout on ALL pages
+    // Isolate verification page - no Navbar, no Sidebar
+    // This applies if we are in pendingAuth state OR we are an unverified resident
+    if (isVerificationPage && (pendingAuth || user)) {
+        return (
+            <div className="app-container verification-only">
+                <main>
+                    <AppRoutes />
+                </main>
+            </div>
+        );
+    }
+
+    // Admin users: sidebar layout on ALL other pages
     if (user && isAdmin && !isGuestPage) {
         return (
             <AdminLayout>

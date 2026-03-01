@@ -59,5 +59,19 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            $identifier = $request->input('identifier')
+                ?? $request->input('email')
+                ?? $request->input('phone');
+
+            $normalized = $identifier
+                ? strtolower(trim($identifier))
+                : $request->ip();
+
+            // 3 attempts per 60 minutes per account (identifier). If no identifier
+            // is supplied, fall back to IP to avoid abuse.
+            return Limit::perMinutes(60, 3)->by('password-reset:' . $normalized);
+        });
     }
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Admin\AdminSmsController;
+use App\Http\Controllers\Api\PasswordResetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,6 +23,21 @@ use App\Http\Controllers\Admin\AdminSmsController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/barangays', [AuthController::class, 'barangays']);
+
+// Password Reset — rate-limited to 3 requests per 60 minutes (security hardened)
+Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])
+    ->middleware(['throttle:password-reset'])
+    ->name('password.email');
+Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])
+    ->middleware(['throttle:password-reset'])
+    ->name('password.update');
+
+Route::get('/email/verify/{id}/{hash}', [\App\Http\Controllers\Api\VerificationController::class, 'verifyEmail'])
+    ->name('verification.verify');
+Route::post('/email/verify-code', [\App\Http\Controllers\Api\VerificationController::class, 'verifyCode']);
+Route::post('/email/resend-code', [\App\Http\Controllers\Api\VerificationController::class, 'resendCode'])
+    ->middleware(['throttle:6,1'])
+    ->name('verification.resend');
 
 // Authenticated routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -74,6 +90,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/users', [AdminController::class, 'users']);
         Route::put('/users/{user}/role', [AdminController::class, 'updateUserRole']);
+        Route::post('/users/{user}/approve', [AdminController::class, 'approveUser']);
+        Route::delete('/users/{user}/reject', [AdminController::class, 'rejectUser']);
         Route::get('/barangays', [AdminController::class, 'barangays']);
         Route::post('/barangays', [AdminController::class, 'storeBarangay']);
         

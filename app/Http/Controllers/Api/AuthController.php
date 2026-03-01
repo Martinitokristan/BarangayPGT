@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Barangay;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -19,9 +20,22 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'barangay_id' => 'required|exists:barangays,id',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'required|string|max:20',
+            'sex' => 'required|in:male,female,other',
+            'birth_date' => 'required|date|before:today',
+            'age' => 'nullable|integer|min:0|max:150',
             'address' => 'nullable|string|max:500',
+            'purok_address' => 'nullable|string|max:255',
+            'id_front' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'id_back' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'device_token' => 'nullable|string|max:64',
         ]);
+
+        $birthDate = Carbon::parse($request->birth_date);
+        $calculatedAge = $birthDate->age;
+
+        $idFrontPath = $request->file('id_front')->store('resident_ids', 'public');
+        $idBackPath = $request->file('id_back')->store('resident_ids', 'public');
 
         $user = User::create([
             'name' => $request->name,
@@ -31,13 +45,26 @@ class AuthController extends Controller
             'barangay_id' => $request->barangay_id,
             'phone' => $request->phone,
             'address' => $request->address,
+            'purok_address' => $request->purok_address,
+            'sex' => $request->sex,
+            'birth_date' => $birthDate,
+            'age' => $calculatedAge,
+            'id_front_path' => $idFrontPath,
+            'id_back_path' => $idBackPath,
+            'is_approved' => false,
         ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // Trust the registration device so login from same device won't need verification again
+        if ($request->device_token) {
+            $user->trustDevice($request->device_token, $request);
+        }
+
+        // Trigger native Laravel email verification (sends standard link)
+        event(new \Illuminate\Auth\Events\Registered($user));
 
         return response()->json([
-            'user' => $user->load('barangay'),
-            'token' => $token,
+            'message' => 'Registration successful! Please verify your email by clicking the link we sent to your inbox.',
+            'email' => $user->email,
         ], 201);
     }
 
@@ -46,6 +73,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string',
+            'device_token' => 'nullable|string|max:64',
         ]);
 
         if (!Auth::attempt($request->only('email', 'password'))) {
@@ -55,11 +83,28 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
+        $deviceToken = $request->device_token;
+        $deviceTrusted = false;
+
+        // Admins are exempt from device trust/verification checks
+        if ($user->role === 'admin') {
+            $deviceTrusted = true;
+        } elseif ($user->hasTrustedDevice($deviceToken)) {
+            // Known/trusted device — no verification needed
+            $deviceTrusted = true;
+            $user->trustDevice($deviceToken, $request); // update last_used_at
+        } else {
+            // New/unknown device — send verification code for identity confirmation
+            $user->sendDeviceVerificationNotification();
+            $deviceTrusted = false;
+        }
+
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'user' => $user->load('barangay'),
             'token' => $token,
+            'device_trusted' => $deviceTrusted,
         ]);
     }
 

@@ -61,6 +61,10 @@ class AdminController extends Controller
             $query->where('barangay_id', $request->barangay_id);
         }
 
+        if ($request->has('is_approved')) {
+            $query->where('is_approved', filter_var($request->is_approved, FILTER_VALIDATE_BOOLEAN));
+        }
+
         return response()->json($query->orderBy('created_at', 'desc')->paginate(20));
     }
 
@@ -73,6 +77,26 @@ class AdminController extends Controller
         $user->update(['role' => $request->role]);
 
         return response()->json($user->load('barangay'));
+    }
+
+    public function approveUser(User $user)
+    {
+        $user->update(['is_approved' => true]);
+        return response()->json(['message' => 'User approved successfully.', 'user' => $user->load('barangay')]);
+    }
+
+    public function rejectUser(User $user)
+    {
+        // Delete the uploaded ID images from storage if they exist
+        if ($user->id_front_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->id_front_path);
+        }
+        if ($user->id_back_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->id_back_path);
+        }
+        
+        $user->delete();
+        return response()->json(['message' => 'User rejected and removed successfully.']);
     }
 
     public function barangays()
