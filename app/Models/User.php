@@ -167,13 +167,15 @@ class User extends Authenticatable implements MustVerifyEmail
             'signature' => $queryParams['signature'] ?? '',
         ]);
 
-        $this->notify(new \App\Notifications\VerifyEmailLink($spaUrl));
+        $mailer = new \App\Services\Mail\BrevoApiMailer();
+        $mailer->sendVerificationLink($this->email, $this->name, $spaUrl);
     }
 
     public function sendDeviceVerificationNotification()
     {
         $code = $this->generateVerificationCode();
-        $this->notify(new \App\Notifications\DeviceVerificationOTP($code));
+        $mailer = new \App\Services\Mail\BrevoApiMailer();
+        $mailer->sendDeviceOtp($this->email, $this->name, $code);
     }
 
     public function verifyCode($code)
