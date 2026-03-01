@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
@@ -13,6 +13,7 @@ import {
 export default function CreatePost() {
     const navigate = useNavigate();
     const toast = useToast();
+    const formRef = useRef(null);
     const [form, setForm] = useState({
         title: "",
         description: "",
