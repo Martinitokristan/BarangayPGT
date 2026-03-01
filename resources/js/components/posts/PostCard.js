@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-// ...existing code...
+import ReactDOM from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { useToast } from "../../contexts/ToastContext";
@@ -77,6 +77,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
     const [showCommentModal, setShowCommentModal] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showImageViewer, setShowImageViewer] = useState(false);
 
     const menuRef = useRef(null);
     const pickerRef = useRef(null);
@@ -127,7 +128,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
             if (e.cancelable) e.preventDefault();
 
             const touch = e.touches[0];
-            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            const element = document.elementFromPoint(
+                touch.clientX,
+                touch.clientY,
+            );
             const reactionItem = element?.closest(".reaction-picker-item"); // Fixed selector
             if (reactionItem) {
                 const type = reactionItem.getAttribute("data-type");
@@ -152,7 +156,9 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         document.addEventListener("mousedown", handleClickOutside);
 
         if (showReactionPicker) {
-            window.addEventListener("touchmove", handleGlobalTouchMove, { passive: false });
+            window.addEventListener("touchmove", handleGlobalTouchMove, {
+                passive: false,
+            });
             window.addEventListener("touchend", handleGlobalTouchEnd);
         }
 
@@ -163,7 +169,8 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         };
     }, [showReactionPicker, hoveredReaction]); // Re-run when picker/hover states change
 
-    const handleReact = async (type) => { // Renamed from handleReaction
+    const handleReact = async (type) => {
+        // Renamed from handleReaction
         try {
             const res = await api.post(`/posts/${post.id}/reactions`, { type });
             setReactions(res.data.reactions);
@@ -174,7 +181,8 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         setShowReactionPicker(false);
     };
 
-    const handleLikeClick = async () => { // Renamed from handleQuickReaction
+    const handleLikeClick = async () => {
+        // Renamed from handleQuickReaction
         if (pressTimer.current === "long-press-triggered") {
             // If long press was triggered, don't do quick reaction on mouse up
             return;
@@ -228,7 +236,8 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         }
     };
 
-    const handleDelete = async () => { // Renamed from handleDeletePost
+    const handleDelete = async () => {
+        // Renamed from handleDeletePost
         try {
             await api.delete(`/posts/${post.id}`);
             toast.success("Post deleted successfully.");
@@ -280,14 +289,16 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         setShowShareMenu(false);
     };
 
-    const handleMouseEnter = () => { // Renamed from handleReactionMouseEnter
+    const handleMouseEnter = () => {
+        // Renamed from handleReactionMouseEnter
         if (window.innerWidth < 768) return; // Disable hover trigger on mobile
         clearTimeout(hoverTimeoutRef.current);
         hoverTimeoutRef.current = setTimeout(() => {
             setShowReactionPicker(true);
         }, 500); // 0.5 second delay for desktop
     };
-    const handleMouseLeave = () => { // Renamed from handleReactionMouseLeave
+    const handleMouseLeave = () => {
+        // Renamed from handleReactionMouseLeave
         clearTimeout(hoverTimeoutRef.current);
         hoverTimeoutRef.current = setTimeout(
             () => {
@@ -305,20 +316,22 @@ export default function PostCard({ post, onUpdate, onDelete }) {
         shareTimeout.current = setTimeout(() => setShowShareMenu(false), 300);
     };
 
-    const isUrgent = post.urgency_level === "high" && post.status !== "resolved";
+    const isUrgent =
+        post.urgency_level === "high" && post.status !== "resolved";
     const urgencyInfo = URGENCY_STYLES[post.urgency_level];
     const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
     const isOwner = user?.id === post.user_id;
     const isAdmin = user?.role === "admin";
     const canManage = isOwner || isAdmin;
-    
+
     // Use comments_count from server if available, otherwise calculate from local array
-    const totalComments = post.comments_count !== undefined 
-        ? post.comments_count 
-        : (post.comments || []).reduce(
-            (acc, comment) => acc + 1 + (comment.replies?.length || 0),
-            0
-        );
+    const totalComments =
+        post.comments_count !== undefined
+            ? post.comments_count
+            : (post.comments || []).reduce(
+                  (acc, comment) => acc + 1 + (comment.replies?.length || 0),
+                  0,
+              );
 
     return (
         <div
@@ -414,11 +427,16 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                 </h3>
                 <p>{post.description}</p>
                 {post.image && (
-                    <img
-                        src={`/storage/${post.image}`}
-                        alt="Post"
-                        className="post-image"
-                    />
+                    <div
+                        className="post-image-wrapper"
+                        onClick={() => setShowImageViewer(true)}
+                    >
+                        <img
+                            src={`/storage/${post.image}`}
+                            alt="Post"
+                            className="post-image"
+                        />
+                    </div>
                 )}
             </div>
 
@@ -469,7 +487,7 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                         ) : (
                             <HiOutlineThumbUp />
                         )}
-                        <span style={userReaction ? { fontWeight: '700' } : {}}>
+                        <span style={userReaction ? { fontWeight: "700" } : {}}>
                             {userReaction
                                 ? REACTION_CONFIG[userReaction].label
                                 : "Like"}
@@ -493,8 +511,12 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                                         data-type={key}
                                         className={`reaction-picker-item reaction-${key} ${userReaction === key ? "active" : ""} ${hoveredReaction === key ? "hovered" : ""}`}
                                         onClick={() => handleReact(key)}
-                                        onMouseEnter={() => setHoveredReaction(key)}
-                                        onMouseLeave={() => setHoveredReaction(null)}
+                                        onMouseEnter={() =>
+                                            setHoveredReaction(key)
+                                        }
+                                        onMouseLeave={() =>
+                                            setHoveredReaction(null)
+                                        }
                                     >
                                         {hoveredReaction === key && (
                                             <span className="reaction-tooltip">
@@ -533,7 +555,10 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                     </button>
                     {showShareMenu && (
                         <div className="share-dropdown">
-                            <button className="share-now-btn" onClick={handleSharePost}>
+                            <button
+                                className="share-now-btn"
+                                onClick={handleSharePost}
+                            >
                                 <FaShare /> Share now (Public)
                             </button>
                             <button onClick={() => handleShare("copy")}>
@@ -582,6 +607,31 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                 onConfirm={handleDelete}
                 onCancel={() => setShowDeleteModal(false)}
             />
+
+            {/* Image Lightbox */}
+            {showImageViewer &&
+                post.image &&
+                ReactDOM.createPortal(
+                    <div
+                        className="image-lightbox-overlay"
+                        onClick={() => setShowImageViewer(false)}
+                    >
+                        <button
+                            className="image-lightbox-close"
+                            onClick={() => setShowImageViewer(false)}
+                            aria-label="Close"
+                        >
+                            <HiX />
+                        </button>
+                        <img
+                            src={`/storage/${post.image}`}
+                            alt="Post"
+                            className="image-lightbox-img"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>,
+                    document.body,
+                )}
         </div>
     );
 }

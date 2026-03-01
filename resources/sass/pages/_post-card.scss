@@ -5,10 +5,10 @@
 // ==========================================================
 
 .post-card {
-    background-color: #fff; 
+    background-color: #fff;
     border-radius: 8px;
     box-shadow: $shadow;
-    border: 1px solid #e0e0e0; 
+    border: 1px solid #e0e0e0;
     overflow: hidden;
     transition: box-shadow $transition;
     position: relative; // Required for absolute 3-dots
@@ -226,8 +226,6 @@
     overflow: hidden;
     animation: menuFadeIn 0.15s ease;
 
-
-
     button {
         display: flex;
         align-items: center;
@@ -323,13 +321,51 @@
         }
     }
 
-    .post-image {
+    .post-image-wrapper {
+        position: relative;
         margin-top: $space-4;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
         border-radius: $radius;
         border: 1px solid $border-color;
-        max-height: 400px;
-        object-fit: cover;
+        background: #000;
+        cursor: pointer;
+
+        &::after {
+            content: "🔍";
+            position: absolute;
+            bottom: $space-2;
+            right: $space-2;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 14px;
+            padding: 4px 7px;
+            border-radius: 20px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        &:hover::after {
+            opacity: 1;
+        }
+    }
+
+    .post-image {
         width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+        transition:
+            transform 0.2s,
+            opacity 0.2s;
+
+        &:hover {
+            opacity: 0.92;
+            transform: scale(1.01);
+        }
     }
 }
 
@@ -515,21 +551,34 @@
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     -webkit-tap-highlight-color: transparent;
 
-    &:hover, &.hovered {
+    &:hover,
+    &.hovered {
         transform: scale(1.4) translateY(-10px);
         z-index: 10;
 
         // Trigger animations on hover/swipe
-        &.reaction-like .reaction-picker-emoji { animation: reactLike 0.6s infinite; }
-        &.reaction-love .reaction-picker-emoji { animation: reactLove 0.8s infinite; }
-        &.reaction-haha .reaction-picker-emoji { animation: reactHaha 0.6s infinite; }
-        &.reaction-wow .reaction-picker-emoji { animation: reactWow 0.6s infinite; }
-        &.reaction-sad .reaction-picker-emoji { animation: reactSad 1.2s infinite; }
-        &.reaction-angry .reaction-picker-emoji { animation: reactAngry 0.4s infinite; }
+        &.reaction-like .reaction-picker-emoji {
+            animation: reactLike 0.6s infinite;
+        }
+        &.reaction-love .reaction-picker-emoji {
+            animation: reactLove 0.8s infinite;
+        }
+        &.reaction-haha .reaction-picker-emoji {
+            animation: reactHaha 0.6s infinite;
+        }
+        &.reaction-wow .reaction-picker-emoji {
+            animation: reactWow 0.6s infinite;
+        }
+        &.reaction-sad .reaction-picker-emoji {
+            animation: reactSad 1.2s infinite;
+        }
+        &.reaction-angry .reaction-picker-emoji {
+            animation: reactAngry 0.4s infinite;
+        }
     }
 
     &.active .reaction-picker-emoji {
-        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
     }
 }
 
@@ -538,7 +587,7 @@
     line-height: 1;
     transition: transform 0.2s ease;
     user-select: none;
-    pointer-events: none; 
+    pointer-events: none;
 
     @media (min-width: 640px) {
         font-size: 2.2rem;
@@ -547,36 +596,72 @@
 
 // Reaction Keyframes
 @keyframes reactLike {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-15deg); }
-    75% { transform: rotate(15deg); }
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+    25% {
+        transform: rotate(-15deg);
+    }
+    75% {
+        transform: rotate(15deg);
+    }
 }
 
 @keyframes reactLove {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.2); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
 
 @keyframes reactHaha {
-    0%, 100% { transform: translateY(0) rotate(0); }
-    25% { transform: translateY(-4px) rotate(-5deg); }
-    75% { transform: translateY(-4px) rotate(5deg); }
+    0%,
+    100% {
+        transform: translateY(0) rotate(0);
+    }
+    25% {
+        transform: translateY(-4px) rotate(-5deg);
+    }
+    75% {
+        transform: translateY(-4px) rotate(5deg);
+    }
 }
 
 @keyframes reactWow {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1) translateY(-2px); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1) translateY(-2px);
+    }
 }
 
 @keyframes reactSad {
-    0%, 100% { transform: rotate(-5deg); }
-    50% { transform: rotate(5deg); }
+    0%,
+    100% {
+        transform: rotate(-5deg);
+    }
+    50% {
+        transform: rotate(5deg);
+    }
 }
 
 @keyframes reactAngry {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-2px) rotate(-2deg); }
-    75% { transform: translateX(2px) rotate(2deg); }
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-2px) rotate(-2deg);
+    }
+    75% {
+        transform: translateX(2px) rotate(2deg);
+    }
 }
 
 .reaction-tooltip {
@@ -622,8 +707,14 @@
 }
 
 @keyframes tooltipFadeIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(0); }
-    to { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(0);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-8px);
+    }
 }
 
 // Share Dropdown
@@ -682,20 +773,30 @@
             font-weight: 600;
             border-bottom: 1px solid $border-color;
             margin-bottom: $space-1;
-            
+
             &:hover {
                 background-color: darken($primary-light, 5%);
                 color: $primary-dark;
             }
 
-            svg { color: $primary; }
+            svg {
+                color: $primary;
+            }
         }
 
         // Social colors on hover for others
-        &:nth-child(2):hover svg { color: #1877f2; }
-        &:nth-child(3):hover svg { color: #0084ff; }
-        &:nth-child(4):hover svg { color: #25d366; }
-        &:nth-child(5):hover svg { color: #1da1f2; }
+        &:nth-child(2):hover svg {
+            color: #1877f2;
+        }
+        &:nth-child(3):hover svg {
+            color: #0084ff;
+        }
+        &:nth-child(4):hover svg {
+            color: #25d366;
+        }
+        &:nth-child(5):hover svg {
+            color: #1da1f2;
+        }
     }
 }
 
@@ -770,7 +871,11 @@
     width: 32px;
     height: 32px;
     border-radius: $radius-full;
-    background: linear-gradient(135deg, $primary, color.adjust($primary, $lightness: 15%));
+    background: linear-gradient(
+        135deg,
+        $primary,
+        color.adjust($primary, $lightness: 15%)
+    );
     color: $text-white;
     display: flex;
     align-items: center;
@@ -969,7 +1074,7 @@
         color: $text-muted;
         cursor: pointer;
         padding: $space-2 0;
-        
+
         &:hover {
             text-decoration: underline;
         }
@@ -1153,6 +1258,75 @@
 
     button {
         flex-shrink: 0;
+    }
+}
+
+/* ===================== Image Lightbox ===================== */
+.image-lightbox-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    cursor: zoom-out;
+    animation: lightbox-fade-in 0.18s ease;
+
+    @keyframes lightbox-fade-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+}
+
+.image-lightbox-img {
+    max-width: 100%;
+    max-height: calc(100vh - 80px);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+    cursor: default;
+    animation: lightbox-scale-in 0.18s ease;
+
+    @keyframes lightbox-scale-in {
+        from {
+            transform: scale(0.95);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+}
+
+.image-lightbox-close {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    z-index: 100000;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.3);
     }
 }
 

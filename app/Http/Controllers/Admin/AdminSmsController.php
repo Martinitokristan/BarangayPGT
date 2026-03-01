@@ -36,15 +36,19 @@ class AdminSmsController extends Controller
         // Send SMS
         $result = $this->smsSender->send($user->phone, $request->message);
 
-        // Track the SMS activity
-        \App\Models\SmsLog::create([
-            'admin_id' => $request->user()->id,
-            'recipient_phone' => $user->phone,
-            'message_content' => $request->message,
-            'status' => $result['success'] ? 'sent' : 'failed',
-            'provider_message_id' => $result['sid'] ?? null,
-            'error_message' => $result['error'] ?? null
-        ]);
+        // Track the SMS activity (wrapped so a missing table doesn't break the response)
+        try {
+            \App\Models\SmsLog::create([
+                'admin_id' => $request->user()->id,
+                'recipient_phone' => $user->phone,
+                'message_content' => $request->message,
+                'status' => $result['success'] ? 'sent' : 'failed',
+                'provider_message_id' => $result['sid'] ?? null,
+                'error_message' => isset($result['error']) ? substr($result['error'], 0, 255) : null,
+            ]);
+        } catch (\Exception $logEx) {
+            \Illuminate\Support\Facades\Log::error('SmsLog write failed: ' . $logEx->getMessage());
+        }
 
         if ($result['success']) {
             return response()->json([

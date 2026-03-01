@@ -24,6 +24,10 @@ class SmsSender
      */
     public function send($to, $message)
     {
+        if (empty($this->apiToken) || empty($this->endpoint)) {
+            return ['success' => false, 'error' => 'SMS service is not configured (missing API token or endpoint).'];
+        }
+
         try {
             // Remove +63 prefix and add 63 if needed for IPROG format
             $phoneNumber = $to;
