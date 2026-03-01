@@ -107,9 +107,16 @@ class VerificationController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        // We also want to remove `hasVerifiedEmail` check here.
-        // This resend is for the 6-digit device login OTP now.
-        $user->sendDeviceVerificationNotification();
+        // This resend is for the 6-digit device login OTP.
+        try {
+            $user->sendDeviceVerificationNotification();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Resend OTP email failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Failed to send code. Please try again later.'], 500);
+        }
 
         return response()->json(['message' => 'New verification code sent!']);
     }

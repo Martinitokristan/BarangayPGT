@@ -6,7 +6,7 @@ import { HiShieldCheck, HiCheckCircle, HiArrowLeft } from "react-icons/hi";
 export default function OtpVerification() {
     const { pendingAuth, logout, verifyCode, resendCode } = useAuth();
     const navigate = useNavigate();
-    
+
     // Kick back to login if no pending auth context exists (page refresh in pending state)
     if (!pendingAuth || !pendingAuth.user) {
         navigate("/login");
@@ -18,7 +18,14 @@ export default function OtpVerification() {
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
     const [code, setCode] = useState(["", "", "", "", "", ""]);
-    const inputRefs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
+    const inputRefs = [
+        useRef(),
+        useRef(),
+        useRef(),
+        useRef(),
+        useRef(),
+        useRef(),
+    ];
 
     // Focus first input on mount
     useEffect(() => {
@@ -29,7 +36,7 @@ export default function OtpVerification() {
 
     const handleChange = (index, value) => {
         if (!/^\d*$/.test(value)) return;
-        
+
         const newCode = [...code];
         newCode[index] = value.substring(value.length - 1);
         setCode(newCode);
@@ -56,7 +63,7 @@ export default function OtpVerification() {
             if (i < 6) newCode[i] = char;
         });
         setCode(newCode);
-        
+
         // Focus the last filled input or the first empty one
         const nextIndex = Math.min(pastedData.length, 5);
         inputRefs[nextIndex].current.focus();
@@ -110,12 +117,17 @@ export default function OtpVerification() {
                     </div>
                     <h1>New Device Login</h1>
                     <p className="verification-subtitle">
-                        To secure your account, please enter the 6-digit code we sent to <br />
+                        To secure your account, please enter the 6-digit code we
+                        sent to <br />
                         <strong>{pendingAuth.user.email}</strong>
                     </p>
                 </div>
 
-                {message && <div className="alert alert-success"><HiCheckCircle /> {message}</div>}
+                {message && (
+                    <div className="alert alert-success">
+                        <HiCheckCircle /> {message}
+                    </div>
+                )}
                 {error && <div className="alert alert-error">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="verification-form">
@@ -127,7 +139,9 @@ export default function OtpVerification() {
                                 type="text"
                                 maxLength="1"
                                 value={digit}
-                                onChange={(e) => handleChange(index, e.target.value)}
+                                onChange={(e) =>
+                                    handleChange(index, e.target.value)
+                                }
                                 onKeyDown={(e) => handleKeyDown(index, e)}
                                 onPaste={handlePaste}
                                 className="code-digit-input"
@@ -138,10 +152,10 @@ export default function OtpVerification() {
                         ))}
                     </div>
 
-                    <button 
-                        type="submit" 
-                        className="btn btn-primary btn-block" 
-                        disabled={verifying || code.some(d => !d)}
+                    <button
+                        type="submit"
+                        className="btn btn-primary btn-block"
+                        disabled={verifying || code.some((d) => !d)}
                     >
                         {verifying ? "Verifying..." : "Verify Device"}
                     </button>
@@ -149,9 +163,9 @@ export default function OtpVerification() {
 
                 <div className="verification-footer text-center">
                     <p>Didn't receive the code?</p>
-                    <button 
-                        className="btn-link" 
-                        onClick={handleResend} 
+                    <button
+                        className="btn-link"
+                        onClick={handleResend}
                         disabled={sending}
                     >
                         {sending ? "Sending..." : "Resend Code"}
@@ -161,11 +175,11 @@ export default function OtpVerification() {
                         <span>or</span>
                     </div>
 
-                    <button 
-                        className="btn-link logout-btn" 
+                    <button
+                        className="btn-link logout-btn"
                         onClick={() => {
                             logout();
-                            navigate('/login');
+                            navigate("/login");
                         }}
                     >
                         <HiArrowLeft /> Cancel Login
@@ -173,7 +187,7 @@ export default function OtpVerification() {
                 </div>
             </div>
 
-            <style jsx>{`
+            <style>{`
                 .verification-isolated {
                     min-height: 100vh;
                     display: flex;
