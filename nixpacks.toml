@@ -1,4 +1,2 @@
-providers = ["php"]
-
-[variables]
-NIXPACKS_PHP_PACKAGE = "php82"
+[phases.setup]
+nixPkgs = ["php82"]
