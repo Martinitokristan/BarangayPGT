@@ -60,10 +60,20 @@ class AuthController extends Controller
         }
 
         // Trigger native Laravel email verification (sends standard link)
-        event(new \Illuminate\Auth\Events\Registered($user));
+        // Wrapped in try/catch so a mail delivery failure does NOT cause a 500 —
+        // the user record is already saved and they can request a resend later.
+        try {
+            event(new \Illuminate\Auth\Events\Registered($user));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Registration verification email failed', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+                'error'   => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
-            'message' => 'Registration successful! Please verify your email by clicking the link we sent to your inbox.',
+            'message' => 'Registration successful! Please check your email to verify your account. If you did not receive it, you can request a new code.',
             'email' => $user->email,
         ], 201);
     }
