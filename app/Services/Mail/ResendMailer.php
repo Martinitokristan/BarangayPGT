@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services\Mail;
 
@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Sends transactional emails via Resend's HTTPS API.
+ * Sends transactional emails via Brevo (formerly Sendinblue) HTTPS API.
  * Used instead of SMTP because Railway blocks outbound SMTP ports.
  */
 class ResendMailer
@@ -17,38 +17,35 @@ class ResendMailer
 
     public function __construct()
     {
-        $this->apiKey   = config('services.resend.api_key', '');
-        // Resend requires a verified sender domain. Until a custom domain is
-        // verified, use Resend's shared onboarding address for testing.
-        $this->from     = 'onboarding@resend.dev';
+        $this->apiKey   = config('services.brevo.api_key', '');
+        $this->from     = config('mail.from.address', 'barangaypgt.noreply@gmail.com');
         $this->fromName = config('mail.from.name', 'BarangayPGT');
     }
 
     /**
-     * Send a plain HTML email via Resend API.
-     *
-     * @param  string  $to       Recipient email address
-     * @param  string  $subject
-     * @param  string  $html     HTML body
-     * @return bool
+     * Send a plain HTML email via Brevo API.
      */
     public function send(string $to, string $subject, string $html): bool
     {
         try {
             $response = Http::timeout(15)
-                ->withToken($this->apiKey)
-                ->post('https://api.resend.com/emails', [
-                    'from'    => "{$this->fromName} <{$this->from}>",
-                    'to'      => [$to],
-                    'subject' => $subject,
-                    'html'    => $html,
+                ->withHeaders([
+                    'api-key'      => $this->apiKey,
+                    'Content-Type' => 'application/json',
+                    'Accept'       => 'application/json',
+                ])
+                ->post('https://api.brevo.com/v3/smtp/email', [
+                    'sender'      => ['name' => $this->fromName, 'email' => $this->from],
+                    'to'          => [['email' => $to]],
+                    'subject'     => $subject,
+                    'htmlContent' => $html,
                 ]);
 
             if ($response->successful()) {
                 return true;
             }
 
-            Log::error('Resend API error', [
+            Log::error('Brevo API error', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
                 'to'     => $to,
@@ -56,7 +53,7 @@ class ResendMailer
             return false;
 
         } catch (\Exception $e) {
-            Log::error('ResendMailer exception', [
+            Log::error('BrevoMailer exception', [
                 'error' => $e->getMessage(),
                 'to'    => $to,
             ]);

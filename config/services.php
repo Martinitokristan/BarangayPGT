@@ -35,8 +35,8 @@ return [
         'endpoint' => env('IPROG_SMS_ENDPOINT'),
     ],
 
-    'resend' => [
-        'api_key' => env('EMAIL_API_KEY', ''),
+    'brevo' => [
+        'api_key' => env('BREVO_API_KEY', ''),
     ],
 
 ];
