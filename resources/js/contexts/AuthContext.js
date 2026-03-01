@@ -83,6 +83,16 @@ export function AuthProvider({ children }) {
         const response = await api.post("/register", data, {
             headers: { "Content-Type": "multipart/form-data" },
         });
+
+        // Store the token returned by registration so the user can access
+        // the /verify-pending PrivateRoute without logging in separately.
+        if (response.data.token && response.data.user) {
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("device_trusted", "false");
+            setUser(response.data.user);
+            setDeviceTrusted(false);
+        }
+
         return response.data;
     };
 

@@ -59,9 +59,9 @@ class AuthController extends Controller
             $user->trustDevice($request->device_token, $request);
         }
 
-        // Trigger native Laravel email verification (sends standard link)
+        // Trigger native Laravel email verification (sends signed link)
         // Wrapped in try/catch so a mail delivery failure does NOT cause a 500 —
-        // the user record is already saved and they can request a resend later.
+        // the user record is already saved and they can request a resend from the pending page.
         try {
             event(new \Illuminate\Auth\Events\Registered($user));
         } catch (\Exception $e) {
@@ -72,9 +72,15 @@ class AuthController extends Controller
             ]);
         }
 
+        // Issue a token immediately so the frontend can load the /verify-pending
+        // route (a PrivateRoute) and resend verification links while authenticated.
+        $token = $user->createToken('auth-token')->plainTextToken;
+
         return response()->json([
-            'message' => 'Registration successful! Please check your email to verify your account. If you did not receive it, you can request a new code.',
-            'email' => $user->email,
+            'message' => 'Registration successful! Please check your email to verify your account.',
+            'email'   => $user->email,
+            'user'    => $user->load('barangay'),
+            'token'   => $token,
         ], 201);
     }
 

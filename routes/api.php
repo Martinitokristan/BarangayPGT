@@ -45,6 +45,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
 
+    // Email verification resend (used from /verify-pending page after registration)
+    Route::post('/email/verification-notification', [\App\Http\Controllers\Api\VerificationController::class, 'resendVerificationLink'])
+        ->middleware(['throttle:6,1'])
+        ->name('verification.send');
+
     // Posts
     Route::get('/posts', [PostController::class, 'index']);
     Route::post('/posts', [PostController::class, 'store']);

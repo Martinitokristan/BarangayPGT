@@ -72,6 +72,31 @@ class VerificationController extends Controller
     }
 
     /**
+     * Resend the signed email verification link (used from /verify-pending page).
+     * Requires the user to be authenticated (token issued at registration).
+     */
+    public function resendVerificationLink(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email is already verified.'], 400);
+        }
+
+        try {
+            $user->sendEmailVerificationNotification();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Resend verification email failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
+            return response()->json(['message' => 'Failed to send verification email. Please try again later.'], 500);
+        }
+
+        return response()->json(['status' => 'verification-link-sent', 'message' => 'A new verification link has been sent to your email address.']);
+    }
+
+    /**
      * Resend the 6-digit verification code.
      */
     public function resendCode(Request $request)

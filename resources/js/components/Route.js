@@ -120,14 +120,7 @@ function AppRoutes() {
                     </PrivateRoute>
                 }
             />
-            <Route
-                path="/verify-email"
-                element={
-                    <GuestRoute>
-                        <VerifyEmail />
-                    </GuestRoute>
-                }
-            />
+            <Route path="/verify-email" element={<VerifyEmail />} />
             {/* ── Password Reset (public / guest routes) ── */}
             <Route
                 path="/forgot-password"
