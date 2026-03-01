@@ -139,10 +139,43 @@ class User extends Authenticatable implements MustVerifyEmail
         return $code;
     }
 
+    /**
+     * Override Laravel's default email verification to use Resend HTTP API
+     * instead of SMTP (Railway blocks all outbound SMTP ports).
+     *
+     * Generates a signed API verification URL, then converts it into the SPA
+     * /verify-email route the VerifyEmail.js component expects.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        // Generate the signed API URL: /api/email/verify/{id}/{hash}?expires=...&signature=...
+        $signedApiUrl = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+
+        // Parse the signed URL to extract query params (expires, signature)
+        $parsed = parse_url($signedApiUrl);
+        parse_str($parsed['query'] ?? '', $queryParams);
+
+        // Build the SPA URL that VerifyEmail.js reads via searchParams
+        $spaUrl = rtrim(config('app.url'), '/') . '/verify-email?' . http_build_query([
+            'id'        => $this->getKey(),
+            'hash'      => sha1($this->getEmailForVerification()),
+            'expires'   => $queryParams['expires'] ?? '',
+            'signature' => $queryParams['signature'] ?? '',
+        ]);
+
+        $mailer = new \App\Services\Mail\ResendMailer();
+        $mailer->sendVerificationLink($this->email, $this->name, $spaUrl);
+    }
+
     public function sendDeviceVerificationNotification()
     {
         $code = $this->generateVerificationCode();
-        $this->notify(new \App\Notifications\DeviceVerificationOTP($code));
+        $mailer = new \App\Services\Mail\ResendMailer();
+        $mailer->sendDeviceOtp($this->email, $this->name, $code);
     }
 
     public function verifyCode($code)
