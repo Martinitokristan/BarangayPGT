@@ -110,8 +110,17 @@ class AuthController extends Controller
             $deviceTrusted = true;
             $user->trustDevice($deviceToken, $request); // update last_used_at
         } else {
-            // New/unknown device — send verification code for identity confirmation
-            $user->sendDeviceVerificationNotification();
+            // New/unknown device — send verification code for identity confirmation.
+            // Wrapped in try/catch: if SMTP times out or fails, login still succeeds
+            // and the user can request a resend from the OTP screen.
+            try {
+                $user->sendDeviceVerificationNotification();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Device verification OTP email failed', [
+                    'user_id' => $user->id,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
             $deviceTrusted = false;
         }
 
