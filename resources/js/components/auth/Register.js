@@ -141,6 +141,9 @@ export default function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (loading) {
+            return; // Guard against double submissions while request is in-flight
+        }
         setErrors({});
         if (!form.barangay_id) {
             setErrors((prev) => ({
