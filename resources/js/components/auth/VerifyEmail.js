@@ -15,27 +15,33 @@ export default function VerifyEmail() {
         const verify = async () => {
             const id = searchParams.get("id");
             const hash = searchParams.get("hash");
+            const expires = searchParams.get("expires");
             const signature = searchParams.get("signature");
 
-            if (!id || !hash || !signature) {
+            if (!id || !hash || !expires || !signature) {
                 setStatus("error");
                 setMessage("Invalid or missing verification link parameters.");
                 return;
             }
 
             try {
-                const url = `/email/verify/${id}/${hash}?signature=${signature}`;
+                const url = `/email/verify/${id}/${hash}?expires=${expires}&signature=${signature}`;
                 const res = await api.get(url);
                 setStatus("success");
-                setMessage(res.data.message || "Email verified! Logging you in...");
-                
+                setMessage(
+                    res.data.message || "Email verified! Logging you in...",
+                );
+
                 // Use the returned token and user to login immediately
                 verifyAndLogin(res.data.user, res.data.token);
-                
-                setTimeout(() => navigate('/'), 2000);
+
+                setTimeout(() => navigate("/"), 2000);
             } catch (err) {
                 setStatus("error");
-                setMessage(err.response?.data?.message || "Verification failed. The link may have expired.");
+                setMessage(
+                    err.response?.data?.message ||
+                        "Verification failed. The link may have expired.",
+                );
             }
         };
 
@@ -44,7 +50,7 @@ export default function VerifyEmail() {
 
     return (
         <div className="auth-container">
-            <div className="auth-card text-center" style={{ padding: '40px' }}>
+            <div className="auth-card text-center" style={{ padding: "40px" }}>
                 {status === "verifying" && (
                     <div>
                         <h2>Verifying...</h2>
@@ -53,18 +59,39 @@ export default function VerifyEmail() {
                 )}
                 {status === "success" && (
                     <div>
-                        <HiCheckCircle style={{ fontSize: '4rem', color: '#10B981', marginBottom: '15px' }} />
+                        <HiCheckCircle
+                            style={{
+                                fontSize: "4rem",
+                                color: "#10B981",
+                                marginBottom: "15px",
+                            }}
+                        />
                         <h2>Success!</h2>
                         <p>{message}</p>
-                        <p style={{ marginTop: '15px', color: '#6B7280' }}>Redirecting to your feed...</p>
+                        <p style={{ marginTop: "15px", color: "#6B7280" }}>
+                            Redirecting to your feed...
+                        </p>
                     </div>
                 )}
                 {status === "error" && (
                     <div>
-                        <HiXCircle style={{ fontSize: '4rem', color: '#EF4444', marginBottom: '15px' }} />
+                        <HiXCircle
+                            style={{
+                                fontSize: "4rem",
+                                color: "#EF4444",
+                                marginBottom: "15px",
+                            }}
+                        />
                         <h2>Verification Failed</h2>
                         <p>{message}</p>
-                        <Link to="/login" className="btn btn-primary" style={{ marginTop: '20px', display: 'inline-block' }}>
+                        <Link
+                            to="/login"
+                            className="btn btn-primary"
+                            style={{
+                                marginTop: "20px",
+                                display: "inline-block",
+                            }}
+                        >
                             Go to Login
                         </Link>
                     </div>
