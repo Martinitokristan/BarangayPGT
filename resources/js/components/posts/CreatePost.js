@@ -43,16 +43,36 @@ export default function CreatePost() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Read DOM values directly as fallback for mobile in-app browsers
+        // (Messenger's WebView fires native 'input' events, not React's synthetic
+        // 'change' events, so form state may be stale even when the user has typed)
+        const titleValue = (formRef.current?.querySelector('[name="title"]')?.value ?? form.title).trim();
+        const descValue = (formRef.current?.querySelector('[name="description"]')?.value ?? form.description).trim();
+        const purposeValue = formRef.current?.querySelector('[name="purpose"]')?.value ?? form.purpose;
+        const urgencyValue = formRef.current?.querySelector('[name="urgency_level"]')?.value ?? form.urgency_level;
+
+        const clientErrors = {};
+        if (!titleValue) clientErrors.title = ["Title is required."];
+        if (!descValue) clientErrors.description = ["Description is required."];
+
+        if (Object.keys(clientErrors).length > 0) {
+            setErrors(clientErrors);
+            toast.error("Please fill in the Title and Description.");
+            formRef.current?.querySelector(".form-error")?.closest(".form-group")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+        }
+
         setErrors({});
         setLoading(true);
         setUploadProgress(image ? 0 : null);
 
         try {
             const formData = new FormData();
-            formData.append("title", form.title);
-            formData.append("description", form.description);
-            formData.append("purpose", form.purpose);
-            formData.append("urgency_level", form.urgency_level);
+            formData.append("title", titleValue);
+            formData.append("description", descValue);
+            formData.append("purpose", purposeValue);
+            formData.append("urgency_level", urgencyValue);
             if (image) formData.append("image", image);
 
             await api.post("/posts", formData, {
@@ -92,7 +112,7 @@ export default function CreatePost() {
                     alert
                 </p>
 
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} ref={formRef}>
                     <div className="form-group">
                         <label htmlFor="title">Title</label>
                         <input
@@ -101,8 +121,8 @@ export default function CreatePost() {
                             type="text"
                             value={form.title}
                             onChange={handleChange}
+                            onInput={handleChange}
                             placeholder="Brief title of your concern"
-                            required
                         />
                         {errors.title && (
                             <span className="form-error">
@@ -119,8 +139,8 @@ export default function CreatePost() {
                             rows={5}
                             value={form.description}
                             onChange={handleChange}
+                            onInput={handleChange}
                             placeholder="Describe the issue in detail..."
-                            required
                         />
                         {errors.description && (
                             <span className="form-error">

@@ -170,14 +170,10 @@ export default function Register() {
                 }
             });
             const result = await register(formData);
-            // Registration successful — redirect to login with success message
-            navigate("/login", {
-                state: {
-                    registrationSuccess:
-                        result.message ||
-                        "Registration successful! Please check your email to verify your account, then log in.",
-                },
-            });
+            // Navigate to OTP verification — account is not created yet
+            navigate(
+                `/verify-registration?email=${encodeURIComponent(result.email)}`,
+            );
         } catch (err) {
             if (err.response?.data?.errors) {
                 setErrors(err.response.data.errors);

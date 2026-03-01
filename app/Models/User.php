@@ -140,7 +140,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Override Laravel's default email verification to use Resend HTTP API
+     * Override Laravel's default email verification to use Brevo HTTP API
      * instead of SMTP (Railway blocks all outbound SMTP ports).
      *
      * Generates a signed API verification URL, then converts it into the SPA

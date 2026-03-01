@@ -84,15 +84,8 @@ export function AuthProvider({ children }) {
             headers: { "Content-Type": "multipart/form-data" },
         });
 
-        // Store the token returned by registration so the user can access
-        // the /verify-pending PrivateRoute without logging in separately.
-        if (response.data.token && response.data.user) {
-            localStorage.setItem("token", response.data.token);
-            localStorage.setItem("device_trusted", "false");
-            setUser(response.data.user);
-            setDeviceTrusted(false);
-        }
-
+        // No token or user returned here — account is not created yet.
+        // The user must verify their email OTP via /verify-registration first.
         return response.data;
     };
 
@@ -102,6 +95,28 @@ export function AuthProvider({ children }) {
         setUser(userData);
         setDeviceTrusted(true);
         setPendingAuth(null);
+    };
+
+    /**
+     * Step 2 of registration: submit OTP, create the account, and auto-login.
+     */
+    const verifyRegistration = async (email, code) => {
+        const response = await api.post("/register/verify", { email, code });
+        const { user: userData, token } = response.data;
+        localStorage.setItem("token", token);
+        localStorage.setItem("device_trusted", "true");
+        setUser(userData);
+        setDeviceTrusted(true);
+        setPendingAuth(null);
+        return response.data;
+    };
+
+    /**
+     * Resend registration OTP to the given email.
+     */
+    const resendRegistrationOtp = async (email) => {
+        const response = await api.post("/register/resend-otp", { email });
+        return response.data;
     };
 
     const verifyCode = async (code) => {
@@ -255,6 +270,8 @@ export function AuthProvider({ children }) {
         updateProfile,
         login,
         register,
+        verifyRegistration,
+        resendRegistrationOtp,
         logout,
         forgotPassword,
         resetPassword,

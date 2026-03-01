@@ -18,7 +18,7 @@ class BrevoApiMailer
 
     public function __construct()
     {
-        $this->apiKey = config('services.brevo.api_key', env('BREVO_API_KEY'));
+        $this->apiKey = config('services.brevo.api_key');
         $this->sender = [
             'name'  => config('mail.from.name', 'BarangayPGT'),
             'email' => config('mail.from.address', 'martinitokristan@gmail.com'),
@@ -69,6 +69,53 @@ class BrevoApiMailer
         </div>';
 
         $this->send($toEmail, $toName, 'Login Verification Code - BarangayPGT', $html);
+    }
+
+    /**
+     * Send a registration OTP email (step 2 of the registration flow).
+     */
+    public function sendRegistrationOtp(string $toEmail, string $toName, string $code): void
+    {
+        $html = '
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+            <h2 style="color:#1d4ed8;">Complete Your Registration</h2>
+            <p>Hello, <strong>' . e($toName) . '</strong>!</p>
+            <p>You\'re almost there! Enter the code below to verify your email and create your BarangayPGT account.</p>
+            <div style="text-align:center;margin:32px 0;font-size:40px;font-weight:bold;letter-spacing:10px;color:#1d4ed8;">
+                ' . e($code) . '
+            </div>
+            <p style="color:#6b7280;font-size:14px;">This code will expire in <strong>15 minutes</strong>.</p>
+            <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+            <p style="color:#9ca3af;font-size:13px;">Regards, BarangayPGT</p>
+        </div>';
+
+        $this->send($toEmail, $toName, 'Your BarangayPGT Verification Code', $html);
+    }
+
+    /**
+     * Send a password reset link email.
+     */
+    public function sendPasswordReset(string $toEmail, string $toName, string $resetUrl): void
+    {
+        $html = '
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+            <h2 style="color:#1d4ed8;">Password Reset Request</h2>
+            <p>Hello, <strong>' . e($toName) . '</strong>!</p>
+            <p>We received a request to reset the password for your BarangayPGT account. Click the button below to choose a new password.</p>
+            <div style="text-align:center;margin:32px 0;">
+                <a href="' . $resetUrl . '"
+                   style="background:#1d4ed8;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-size:16px;">
+                    Reset My Password
+                </a>
+            </div>
+            <p style="color:#6b7280;font-size:14px;">This link will expire in 60 minutes.</p>
+            <p style="color:#6b7280;font-size:14px;">If you did not request a password reset, you can safely ignore this email — your password will not be changed.</p>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+            <p style="color:#9ca3af;font-size:13px;">Regards, BarangayPGT</p>
+        </div>';
+
+        $this->send($toEmail, $toName, 'Password Reset Request – BarangayPGT', $html);
     }
 
     /**

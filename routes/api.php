@@ -21,6 +21,9 @@ use App\Http\Controllers\Api\PasswordResetController;
 
 // Public routes
 Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register/verify', [AuthController::class, 'verifyRegistration']);
+Route::post('/register/resend-otp', [AuthController::class, 'resendRegistrationOtp'])
+    ->middleware(['throttle:6,1']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/barangays', [AuthController::class, 'barangays']);
 

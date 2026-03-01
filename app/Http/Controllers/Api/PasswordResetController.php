@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Notifications\PasswordResetNotification;
+use App\Services\Mail\BrevoApiMailer;
 use App\Services\Sms\SmsSender;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -66,7 +66,7 @@ class PasswordResetController extends Controller
                 . '?token=' . $plainToken
                 . '&email=' . urlencode($user->email);
 
-            $user->notify(new PasswordResetNotification($resetUrl));
+            (new BrevoApiMailer())->sendPasswordReset($user->email, $user->name, $resetUrl);
 
         } else {
             // ── PHONE / SMS FLOW ──────────────────────────────────────────

@@ -16,6 +16,7 @@ import Register from "./auth/Register";
 import VerificationPending from "./auth/VerificationPending";
 import OtpVerification from "./auth/OtpVerification";
 import VerifyEmail from "./auth/VerifyEmail";
+import VerifyRegistration from "./auth/VerifyRegistration";
 import ForgotPassword from "./auth/ForgotPassword";
 import ResetPassword from "./auth/ResetPassword";
 import ResetPasswordOtp from "./auth/ResetPasswordOtp";
@@ -101,6 +102,14 @@ function AppRoutes() {
                 element={
                     <GuestRoute>
                         <Register />
+                    </GuestRoute>
+                }
+            />
+            <Route
+                path="/verify-registration"
+                element={
+                    <GuestRoute>
+                        <VerifyRegistration />
                     </GuestRoute>
                 }
             />
