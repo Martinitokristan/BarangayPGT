@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import api from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { HiMail, HiCheckCircle, HiArrowLeft } from "react-icons/hi";
 
 export default function VerificationPending() {
-    const { user, pendingAuth, logout, verifyCode, resendCode } = useAuth();
+    const { user, pendingAuth, logout, fetchUser } = useAuth();
+    const navigate = useNavigate();
     const activeUser = user || pendingAuth?.user;
 
     // Kick back to login if no auth context exists (page refresh in pending state)
@@ -16,6 +17,25 @@ export default function VerificationPending() {
     const [sending, setSending] = useState(false);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+
+    // Poll every 4 seconds to detect when the user clicks the verification link
+    const pollRef = useRef(null);
+    useEffect(() => {
+        const check = async () => {
+            try {
+                const userData = await fetchUser();
+                if (userData?.email_verified_at) {
+                    clearInterval(pollRef.current);
+                    navigate("/");
+                }
+            } catch (_) {
+                // ignore network blips
+            }
+        };
+
+        pollRef.current = setInterval(check, 4000);
+        return () => clearInterval(pollRef.current);
+    }, []);
 
     const handleResend = async () => {
         setSending(true);

@@ -94,6 +94,31 @@ class BrevoApiMailer
     }
 
     /**
+     * Send a registration email-verification link (click-to-verify flow).
+     * The link encodes the email + OTP so the user never has to type a code.
+     */
+    public function sendRegistrationLink(string $toEmail, string $toName, string $verifyUrl): void
+    {
+        $html = '
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+            <h2 style="color:#1d4ed8;">Welcome to BarangayPGT, ' . e($toName) . '!</h2>
+            <p>Thank you for registering. Click the button below to verify your email address and complete your account setup.</p>
+            <div style="text-align:center;margin:32px 0;">
+                <a href="' . $verifyUrl . '"
+                   style="background:#1d4ed8;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;font-size:16px;font-weight:bold;">
+                    Verify Email
+                </a>
+            </div>
+            <p style="color:#6b7280;font-size:14px;">This link will expire in <strong>15 minutes</strong>.</p>
+            <p style="color:#6b7280;font-size:14px;">If you did not create an account, you can safely ignore this email.</p>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+            <p style="color:#9ca3af;font-size:13px;">Regards, BarangayPGT</p>
+        </div>';
+
+        $this->send($toEmail, $toName, 'Verify Your Email – BarangayPGT', $html);
+    }
+
+    /**
      * Send a password reset link email.
      */
     public function sendPasswordReset(string $toEmail, string $toName, string $resetUrl): void

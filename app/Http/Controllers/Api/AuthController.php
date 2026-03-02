@@ -10,6 +10,7 @@ use App\Services\Mail\BrevoApiMailer;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -74,24 +75,168 @@ class AuthController extends Controller
             'device_token'   => $request->device_token,
         ]);
 
+        $verifyUrl = rtrim(config('app.url'), '/') . '/api/register/confirm'
+            . '?email=' . urlencode($request->email)
+            . '&code=' . $otp;
+
         try {
-            (new BrevoApiMailer())->sendRegistrationOtp($request->email, $request->name, $otp);
+            (new BrevoApiMailer())->sendRegistrationLink($request->email, $request->name, $verifyUrl);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Registration OTP email failed', [
+            \Illuminate\Support\Facades\Log::error('Registration verification email failed', [
                 'email' => $request->email,
                 'error' => $e->getMessage(),
             ]);
         }
 
         return response()->json([
-            'message' => 'A 6-digit verification code has been sent to your email. Please enter it to complete registration.',
+            'message' => 'A verification link has been sent to your email. Click the link to complete registration.',
             'email'   => $request->email,
         ], 201);
     }
 
     /**
-     * Step 2 of registration: verify the OTP, create the User, and return an auth token.
-     * Email is considered verified because the user proved ownership via OTP.
+     * Step 2a — GET endpoint the email link points to directly (opened in Gmail/browser).
+     * Verifies OTP, creates the User, stores token in cache for the waiting SPA to pick up.
+     * Returns a plain HTML page the user sees in their email app.
+     */
+    public function confirmRegistration(Request $request)
+    {
+        $email = $request->query('email');
+        $code  = $request->query('code');
+
+        if (!$email || !$code) {
+            return response($this->htmlPage('Invalid Link', '#dc2626', 'This verification link is invalid. Please request a new one from the app.'), 400)
+                ->header('Content-Type', 'text/html');
+        }
+
+        $pending = PendingRegistration::where('email', $email)->first();
+
+        if (!$pending) {
+            return response($this->htmlPage('Already Verified', '#16a34a', 'Your email has already been verified. You can return to the app and log in.'), 200)
+                ->header('Content-Type', 'text/html');
+        }
+
+        if ($pending->otp_code !== $code) {
+            return response($this->htmlPage('Invalid Link', '#dc2626', 'This verification link is invalid. Please request a new one from the app.'), 422)
+                ->header('Content-Type', 'text/html');
+        }
+
+        if ($pending->isExpired()) {
+            return response($this->htmlPage('Link Expired', '#d97706', 'This verification link has expired (15 minutes). Please request a new one from the app.'), 422)
+                ->header('Content-Type', 'text/html');
+        }
+
+        // Move ID photos from staging to permanent folder
+        $newFrontPath = str_replace('resident_ids_pending/', 'resident_ids/', $pending->id_front_path);
+        $newBackPath  = str_replace('resident_ids_pending/', 'resident_ids/', $pending->id_back_path);
+        Storage::disk('public')->move($pending->id_front_path, $newFrontPath);
+        Storage::disk('public')->move($pending->id_back_path, $newBackPath);
+
+        $user = User::create([
+            'name'              => $pending->name,
+            'email'             => $pending->email,
+            'password'          => $pending->password,
+            'role'              => 'resident',
+            'barangay_id'       => $pending->barangay_id,
+            'phone'             => $pending->phone,
+            'address'           => $pending->address,
+            'purok_address'     => $pending->purok_address,
+            'sex'               => $pending->sex,
+            'birth_date'        => $pending->birth_date,
+            'age'               => $pending->age,
+            'id_front_path'     => $newFrontPath,
+            'id_back_path'      => $newBackPath,
+            'is_approved'       => false,
+            'email_verified_at' => now(),
+        ]);
+
+        if ($pending->device_token) {
+            $user->trustDevice($pending->device_token, $request);
+        }
+
+        $pending->delete();
+
+        $token = $user->createToken('auth-token')->plainTextToken;
+
+        // Store in cache — the SPA /register/poll endpoint picks this up
+        $cacheKey = 'reg_verified_' . md5(strtolower(trim($email)));
+        Cache::put($cacheKey, [
+            'token' => $token,
+            'user'  => $user->load('barangay')->toArray(),
+        ], now()->addMinutes(10));
+
+        return response($this->htmlPage(
+            'Email Verified!',
+            '#16a34a',
+            'Your email has been verified successfully. You can close this tab — the app is loading your account.'
+        ), 200)->header('Content-Type', 'text/html');
+    }
+
+    /**
+     * Step 2b — Polling endpoint called by the waiting SPA every few seconds.
+     * Returns {verified: true, token, user} once confirmRegistration() completes,
+     * otherwise {verified: false}.
+     */
+    public function pollRegistrationStatus(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $email    = strtolower(trim($request->email));
+        $cacheKey = 'reg_verified_' . md5($email);
+        $data     = Cache::get($cacheKey);
+
+        if ($data) {
+            // Primary path: cache hit from confirmRegistration
+            Cache::forget($cacheKey);
+            return response()->json([
+                'verified' => true,
+                'token'    => $data['token'],
+                'user'     => $data['user'],
+            ]);
+        }
+
+        // Fallback: cache may have been missed (timing, process mismatch, etc.)
+        // If no pending row exists but a user does, confirmation already ran.
+        $pending = \App\Models\PendingRegistration::where('email', $email)->first();
+        if (!$pending) {
+            $user = User::where('email', $email)->first();
+            if ($user) {
+                $token = $user->createToken('auth-token')->plainTextToken;
+                return response()->json([
+                    'verified' => true,
+                    'token'    => $token,
+                    'user'     => $user->load('barangay')->toArray(),
+                ]);
+            }
+        }
+
+        return response()->json(['verified' => false]);
+    }
+
+    /** Small HTML page returned directly to the user's email browser/webview. */
+    private function htmlPage(string $title, string $color, string $message): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{$title} – BarangayPGT</title>
+</head>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f4f6;font-family:Arial,sans-serif">
+  <div style="background:#fff;border-radius:12px;padding:40px 32px;max-width:420px;width:90%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+    <div style="font-size:52px;margin-bottom:16px">✅</div>
+    <h1 style="color:{$color};font-size:1.5rem;margin:0 0 12px">{$title}</h1>
+    <p style="color:#4b5563;line-height:1.6;margin:0">{$message}</p>
+  </div>
+</body>
+</html>
+HTML;
+    }
+
+    /**
+     * Step 2 of registration (legacy/fallback): verify OTP via JSON POST and return token.
      */
     public function verifyRegistration(Request $request)
     {
@@ -175,17 +320,21 @@ class AuthController extends Controller
             'otp_expires_at' => now()->addMinutes(15),
         ]);
 
+        $verifyUrl = rtrim(config('app.url'), '/') . '/api/register/confirm'
+            . '?email=' . urlencode($pending->email)
+            . '&code=' . $otp;
+
         try {
-            (new BrevoApiMailer())->sendRegistrationOtp($pending->email, $pending->name, $otp);
+            (new BrevoApiMailer())->sendRegistrationLink($pending->email, $pending->name, $verifyUrl);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Resend registration OTP failed', [
+            \Illuminate\Support\Facades\Log::error('Resend registration link failed', [
                 'email' => $pending->email,
                 'error' => $e->getMessage(),
             ]);
-            return response()->json(['message' => 'Failed to send code. Please try again.'], 500);
+            return response()->json(['message' => 'Failed to send link. Please try again.'], 500);
         }
 
-        return response()->json(['message' => 'A new verification code has been sent to your email.']);
+        return response()->json(['message' => 'A new verification link has been sent to your email.']);
     }
 
     public function login(Request $request)

@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
             setUser(response.data);
             const trusted = localStorage.getItem("device_trusted");
             setDeviceTrusted(trusted === "true");
+            return response.data;
         } catch (error) {
             logout();
         } finally {
@@ -102,12 +103,7 @@ export function AuthProvider({ children }) {
      */
     const verifyRegistration = async (email, code) => {
         const response = await api.post("/register/verify", { email, code });
-        const { user: userData, token } = response.data;
-        localStorage.setItem("token", token);
-        localStorage.setItem("device_trusted", "true");
-        setUser(userData);
-        setDeviceTrusted(true);
-        setPendingAuth(null);
+        verifyAndLogin(response.data.user, response.data.token);
         return response.data;
     };
 
@@ -117,6 +113,19 @@ export function AuthProvider({ children }) {
     const resendRegistrationOtp = async (email) => {
         const response = await api.post("/register/resend-otp", { email });
         return response.data;
+    };
+
+    /**
+     * Poll the server to see if the user has clicked the verification link in their email.
+     * Returns { verified: false } or { verified: true, token, user } once confirmed.
+     */
+    const pollRegistrationStatus = async (email) => {
+        const response = await api.get("/register/poll", { params: { email } });
+        const data = response.data;
+        if (data.verified) {
+            verifyAndLogin(data.user, data.token);
+        }
+        return data;
     };
 
     const verifyCode = async (code) => {
@@ -261,7 +270,6 @@ export function AuthProvider({ children }) {
 
     const updateProfile = (updatedUser) => {
         setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
     };
 
     const value = {
@@ -272,6 +280,7 @@ export function AuthProvider({ children }) {
         register,
         verifyRegistration,
         resendRegistrationOtp,
+        pollRegistrationStatus,
         logout,
         forgotPassword,
         resetPassword,
@@ -282,6 +291,7 @@ export function AuthProvider({ children }) {
         verifyCode,
         verifyAndLogin,
         resendCode,
+        fetchUser,
         isAdmin: user?.role === "admin",
         isResident: user?.role === "resident",
     };
