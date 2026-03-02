@@ -12,10 +12,9 @@ class CreateReactionsTable extends Migration
             $table->id();
             $table->foreignId('post_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('type', ['like', 'support', 'urgent', 'sad', 'angry']);
+            $table->enum('type', ['Like', 'heart', 'support', 'sad']);
             $table->timestamps();
-
-            $table->unique(['post_id', 'user_id']); // one reaction per user per post
+            $table->unique(['post_id', 'user_id']);
         });
     }
 

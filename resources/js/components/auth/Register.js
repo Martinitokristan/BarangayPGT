@@ -63,13 +63,11 @@ export default function Register() {
         password_confirmation: "",
         barangay_id: "",
         phone: "",
-        address: "",
         sex: "",
         birth_date: "",
         age: "",
         purok_address: "",
-        id_front: null,
-        id_back: null,
+        valid_id: null,
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
@@ -378,7 +376,7 @@ export default function Register() {
                     <div className="form-row">
                         <div className="form-group">
                             <label htmlFor="purok_address">
-                                <HiHome /> Purok Address (optional)
+                                <HiHome /> Purok Address
                             </label>
                             <input
                                 id="purok_address"
@@ -387,24 +385,13 @@ export default function Register() {
                                 value={form.purok_address}
                                 onChange={handleChange}
                                 placeholder="e.g., Purok 5"
+                                required
                             />
                             {errors.purok_address && (
                                 <span className="form-error">
                                     {errors.purok_address[0]}
                                 </span>
                             )}
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="address">
-                                <HiLocationMarker /> Full Address (optional)
-                            </label>
-                            <input
-                                id="address"
-                                name="address"
-                                type="text"
-                                value={form.address}
-                                onChange={handleChange}
-                            />
                         </div>
                     </div>
 
@@ -450,43 +437,26 @@ export default function Register() {
                         )}
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="id_front">
-                                <HiLocationMarker /> Upload ID (Front)
-                            </label>
-                            <input
-                                id="id_front"
-                                name="id_front"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleChange}
-                                required
-                            />
-                            {errors.id_front && (
-                                <span className="form-error">
-                                    {errors.id_front[0]}
-                                </span>
-                            )}
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="id_back">
-                                <HiLocationMarker /> Upload ID (Back)
-                            </label>
-                            <input
-                                id="id_back"
-                                name="id_back"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleChange}
-                                required
-                            />
-                            {errors.id_back && (
-                                <span className="form-error">
-                                    {errors.id_back[0]}
-                                </span>
-                            )}
-                        </div>
+                    <div className="form-group">
+                        <label htmlFor="valid_id">
+                            <HiLocationMarker /> Upload Valid ID
+                        </label>
+                        <input
+                            id="valid_id"
+                            name="valid_id"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleChange}
+                            required
+                        />
+                        <small style={{ color: "#6b7280" }}>
+                            Please upload a clear photo of your valid ID (e.g., Driver's License, Passport, National ID).
+                        </small>
+                        {errors.valid_id && (
+                            <span className="form-error">
+                                {errors.valid_id[0]}
+                            </span>
+                        )}
                     </div>
 
                     <button

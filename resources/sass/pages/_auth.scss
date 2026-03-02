@@ -8,9 +8,18 @@
     justify-content: center;
     min-height: 100vh;
     padding: $space-4;
-    background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.08) 0%, transparent 40%),
-                $bg-body;
+    background:
+        radial-gradient(
+            circle at 10% 20%,
+            rgba(37, 99, 235, 0.05) 0%,
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 90% 80%,
+            rgba(37, 99, 235, 0.08) 0%,
+            transparent 40%
+        ),
+        $bg-body;
     position: relative;
     overflow: hidden;
 
@@ -21,7 +30,11 @@
         right: -5%;
         width: 400px;
         height: 400px;
-        background: radial-gradient(circle, rgba($primary, 0.1) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            rgba($primary, 0.1) 0%,
+            transparent 70%
+        );
         border-radius: 50%;
         z-index: 0;
     }
@@ -33,7 +46,11 @@
         left: -5%;
         width: 500px;
         height: 500px;
-        background: radial-gradient(circle, rgba($primary, 0.08) 0%, transparent 70%);
+        background: radial-gradient(
+            circle,
+            rgba($primary, 0.08) 0%,
+            transparent 70%
+        );
         border-radius: 50%;
         z-index: 0;
     }
@@ -51,7 +68,9 @@
     border: 1px solid rgba(255, 255, 255, 0.4);
     position: relative;
     z-index: 1;
-    transition: transform $transition, box-shadow $transition;
+    transition:
+        transform $transition,
+        box-shadow $transition;
 
     &:hover {
         transform: translateY(-4px);
@@ -185,7 +204,13 @@
 }
 
 @keyframes float {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
-    100% { transform: translateY(0px); }
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
 }

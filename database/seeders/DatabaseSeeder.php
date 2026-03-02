@@ -14,12 +14,7 @@ class DatabaseSeeder extends Seeder
         // Ensure the Pagatpatan barangay record exists for registration gating
         $barangay = Barangay::updateOrCreate(
             ['name' => 'Barangay Pagatpatan'],
-            [
-                'city' => 'Butuan City',
-                'province' => 'Agusan del Norte',
-                'zip_code' => '8600',
-                'description' => 'Official Barangay Pagatpatan community',
-            ]
+            []
         );
 
         // Create admin user (idempotent for repeated seeds)
@@ -31,7 +26,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'barangay_id' => $barangay->id,
                 'phone' => '09171234567',
-                'address' => 'Barangay Hall, Pagatpatan',
+                'purok_address' => 'Barangay Hall, Pagatpatan',
             ]
         );
 
@@ -44,7 +39,7 @@ class DatabaseSeeder extends Seeder
                 'role' => 'resident',
                 'barangay_id' => $barangay->id,
                 'phone' => '09179876543',
-                'address' => '123 Main St, Barangay Pagatpatan',
+                'purok_address' => 'Purok 1, Barangay Pagatpatan',
             ]
         );
     }

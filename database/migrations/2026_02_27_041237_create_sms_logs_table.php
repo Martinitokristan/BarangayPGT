@@ -18,7 +18,7 @@ class CreateSmsLogsTable extends Migration
             $table->foreignId('admin_id')->constrained('users')->onDelete('cascade');
             $table->string('recipient_phone');
             $table->text('message_content');
-            $table->string('status')->default('sent'); // 'sent', 'failed'
+            $table->string('status')->default('sent');
             $table->string('provider_message_id')->nullable();
             $table->string('error_message')->nullable();
             $table->timestamps();

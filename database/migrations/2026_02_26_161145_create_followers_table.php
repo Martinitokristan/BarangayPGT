@@ -17,12 +17,10 @@ class CreateFollowersTable extends Migration
             $table->id();
             $table->foreignId('follower_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('following_id')->constrained('users')->onDelete('cascade');
+            $table->boolean('notify')->default(false);
+            $table->timestamp('snoozed_until')->nullable();
             $table->timestamps();
-            
-            // Prevent duplicate follows
             $table->unique(['follower_id', 'following_id']);
-            
-            // Prevent self-following
             $table->index(['follower_id', 'following_id']);
         });
     }

@@ -11,10 +11,6 @@ class CreateBarangaysTable extends Migration
         Schema::create('barangays', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('city')->nullable();
-            $table->string('province')->nullable();
-            $table->string('zip_code')->nullable();
-            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

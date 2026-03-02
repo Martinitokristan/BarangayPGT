@@ -34,10 +34,8 @@ class AuthController extends Controller
             'sex'          => 'required|in:male,female,other',
             'birth_date'   => 'required|date|before:today',
             'age'          => 'nullable|integer|min:0|max:150',
-            'address'      => 'nullable|string|max:500',
-            'purok_address'=> 'nullable|string|max:255',
-            'id_front'     => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'id_back'      => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'purok_address'=> 'required|string|max:255',
+            'valid_id'     => 'required|image|mimes:jpeg,png,jpg|max:5120',
             'device_token' => 'nullable|string|max:64',
         ]);
 
@@ -45,15 +43,14 @@ class AuthController extends Controller
         $calculatedAge = $birthDate->age;
         $otp           = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        // Store ID photos to a staging folder — moved to resident_ids/ after verification
-        $idFrontPath = $request->file('id_front')->store('resident_ids_pending', 'public');
-        $idBackPath  = $request->file('id_back')->store('resident_ids_pending', 'public');
+        // Store ID photo to a staging folder — moved to resident_ids/ after verification
+        $validIdPath = $request->file('valid_id')->store('resident_ids_pending', 'public');
 
         // Replace any previous pending registration for this email
         // (e.g. user closed the tab and re-submitted the form)
         $existing = PendingRegistration::where('email', $request->email)->first();
         if ($existing) {
-            Storage::disk('public')->delete([$existing->id_front_path, $existing->id_back_path]);
+            Storage::disk('public')->delete($existing->valid_id_path);
             $existing->delete();
         }
 
@@ -63,13 +60,11 @@ class AuthController extends Controller
             'password'       => Hash::make($request->password),
             'barangay_id'    => $request->barangay_id,
             'phone'          => $request->phone,
-            'address'        => $request->address,
             'purok_address'  => $request->purok_address,
             'sex'            => $request->sex,
             'birth_date'     => $birthDate->toDateString(),
             'age'            => $calculatedAge,
-            'id_front_path'  => $idFrontPath,
-            'id_back_path'   => $idBackPath,
+            'valid_id_path'  => $validIdPath,
             'otp_code'       => $otp,
             'otp_expires_at' => now()->addMinutes(15),
             'device_token'   => $request->device_token,
@@ -126,11 +121,9 @@ class AuthController extends Controller
                 ->header('Content-Type', 'text/html');
         }
 
-        // Move ID photos from staging to permanent folder
-        $newFrontPath = str_replace('resident_ids_pending/', 'resident_ids/', $pending->id_front_path);
-        $newBackPath  = str_replace('resident_ids_pending/', 'resident_ids/', $pending->id_back_path);
-        Storage::disk('public')->move($pending->id_front_path, $newFrontPath);
-        Storage::disk('public')->move($pending->id_back_path, $newBackPath);
+        // Move ID photo from staging to permanent folder
+        $newValidIdPath = str_replace('resident_ids_pending/', 'resident_ids/', $pending->valid_id_path);
+        Storage::disk('public')->move($pending->valid_id_path, $newValidIdPath);
 
         $user = User::create([
             'name'              => $pending->name,
@@ -139,13 +132,11 @@ class AuthController extends Controller
             'role'              => 'resident',
             'barangay_id'       => $pending->barangay_id,
             'phone'             => $pending->phone,
-            'address'           => $pending->address,
             'purok_address'     => $pending->purok_address,
             'sex'               => $pending->sex,
             'birth_date'        => $pending->birth_date,
             'age'               => $pending->age,
-            'id_front_path'     => $newFrontPath,
-            'id_back_path'      => $newBackPath,
+            'valid_id_path'     => $newValidIdPath,
             'is_approved'       => false,
             'email_verified_at' => now(),
         ]);

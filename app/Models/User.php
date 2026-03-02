@@ -19,17 +19,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'role',
         'barangay_id',
         'phone',
-        'address',
         'purok_address',
         'sex',
         'birth_date',
         'age',
         'avatar',
         'cover_photo',
-        'id_front_path',
-        'id_back_path',
+        'valid_id_path',
         'is_approved',
         'email_verified_at',
+        'verification_code',
+        'verification_code_expires_at',
     ];
 
     protected $hidden = [

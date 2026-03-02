@@ -423,20 +423,12 @@ export default function UserProfile() {
                         <div className="about-section">
                             <div className="about-card">
                                 <h3>About {user.name}</h3>
-                                {user.address && (
+                                {user.purok_address && (
                                     <div className="about-item">
-                                        <strong>Address:</strong>
-                                        <span>{user.address}</span>
+                                        <strong>Purok Address:</strong>
+                                        <span>{user.purok_address}</span>
                                     </div>
                                 )}
-                                <div className="about-item">
-                                    <strong>Role:</strong>
-                                    <span>
-                                        {user.role === "admin"
-                                            ? "Administrator"
-                                            : "Resident"}
-                                    </span>
-                                </div>
                                 {user.barangay && (
                                     <div className="about-item">
                                         <strong>Barangay:</strong>

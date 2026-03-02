@@ -222,12 +222,6 @@ export default function AdminUsers() {
                                             : ""}
                                     </span>
                                 </div>
-                                {user.address && (
-                                    <div className="user-card__detail-row">
-                                        <HiLocationMarker className="user-card__icon" />
-                                        <span>{user.address}</span>
-                                    </div>
-                                )}
                                 <div className="user-card__detail-row">
                                     <HiMail className="user-card__icon" />
                                     <span>
@@ -238,41 +232,24 @@ export default function AdminUsers() {
                                     </span>
                                 </div>
 
-                                {/* ID photos */}
-                                {(user.id_front_path || user.id_back_path) && (
+                                {/* Valid ID */}
+                                {user.valid_id_path && (
                                     <div className="user-card__ids">
                                         <HiIdentification className="user-card__icon" />
                                         <div className="user-card__id-links">
-                                            {user.id_front_path && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-outline"
-                                                    onClick={() =>
-                                                        setLightbox({
-                                                            open: true,
-                                                            src: `/storage/${user.id_front_path}`,
-                                                            label: `${user.name} — ID Front`,
-                                                        })
-                                                    }
-                                                >
-                                                    ID Front
-                                                </button>
-                                            )}
-                                            {user.id_back_path && (
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-sm btn-outline"
-                                                    onClick={() =>
-                                                        setLightbox({
-                                                            open: true,
-                                                            src: `/storage/${user.id_back_path}`,
-                                                            label: `${user.name} — ID Back`,
-                                                        })
-                                                    }
-                                                >
-                                                    ID Back
-                                                </button>
-                                            )}
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline"
+                                                onClick={() =>
+                                                    setLightbox({
+                                                        open: true,
+                                                        src: `/storage/${user.valid_id_path}`,
+                                                        label: `${user.name} — Valid ID`,
+                                                    })
+                                                }
+                                            >
+                                                View Valid ID
+                                            </button>
                                         </div>
                                     </div>
                                 )}

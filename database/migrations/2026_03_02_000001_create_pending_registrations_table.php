@@ -15,13 +15,11 @@ return new class extends Migration
             $table->string('password');
             $table->unsignedBigInteger('barangay_id');
             $table->string('phone');
-            $table->string('address')->nullable();
-            $table->string('purok_address')->nullable();
+            $table->string('purok_address')->nullable(); // Only purok address
             $table->string('sex');
             $table->date('birth_date');
             $table->unsignedTinyInteger('age');
-            $table->string('id_front_path');
-            $table->string('id_back_path');
+            $table->string('valid_id_path');
             $table->string('otp_code', 6);
             $table->timestamp('otp_expires_at');
             $table->string('device_token')->nullable();
