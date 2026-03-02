@@ -21,6 +21,7 @@ import ForgotPassword from "./auth/ForgotPassword";
 import ResetPassword from "./auth/ResetPassword";
 import ResetPasswordOtp from "./auth/ResetPasswordOtp";
 import Unauthorized401 from "./auth/Unauthorized401";
+import ApprovalPending from "./auth/ApprovalPending";
 import Feed from "./posts/Feed";
 import PostDetail from "./posts/PostDetail";
 import CreatePost from "./posts/CreatePost";
@@ -64,6 +65,16 @@ function PrivateRoute({ children }) {
             location.pathname !== "/verify-pending"
         ) {
             return <Navigate to="/verify-pending" />;
+        }
+
+        // Condition 3: Email verified but not yet approved by admin
+        if (
+            user &&
+            user.email_verified_at &&
+            !user.is_approved &&
+            location.pathname !== "/approval-pending"
+        ) {
+            return <Navigate to="/approval-pending" />;
         }
     }
 
@@ -126,6 +137,14 @@ function AppRoutes() {
                 element={
                     <PrivateRoute>
                         <VerificationPending />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/approval-pending"
+                element={
+                    <PrivateRoute>
+                        <ApprovalPending />
                     </PrivateRoute>
                 }
             />
@@ -254,7 +273,8 @@ function AppShell() {
     const location = useLocation();
     const isVerificationPage =
         location.pathname === "/verify-pending" ||
-        location.pathname === "/device-verification";
+        location.pathname === "/device-verification" ||
+        location.pathname === "/approval-pending";
     const isGuestPage = [
         "/login",
         "/register",

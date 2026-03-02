@@ -29,7 +29,8 @@ export default function VerifyEmail() {
                 const res = await api.get(url);
                 setStatus("success");
                 setMessage(
-                    res.data.message || "Email verified! Logging you in...",
+                    res.data.message ||
+                        "Email verified! Setting up your account...",
                 );
 
                 // Use the returned token and user to login immediately
@@ -69,7 +70,7 @@ export default function VerifyEmail() {
                         <h2>Success!</h2>
                         <p>{message}</p>
                         <p style={{ marginTop: "15px", color: "#6B7280" }}>
-                            Redirecting to your feed...
+                            Redirecting...
                         </p>
                     </div>
                 )}

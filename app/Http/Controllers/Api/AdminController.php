@@ -7,7 +7,10 @@ use App\Models\Post;
 use App\Models\User;
 use App\Models\Barangay;
 use App\Models\Notification;
+use App\Models\SmsLog;
+use App\Services\Sms\SmsSender;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
@@ -79,10 +82,35 @@ class AdminController extends Controller
         return response()->json($user->load('barangay'));
     }
 
-    public function approveUser(User $user)
+    public function approveUser(Request $request, User $user)
     {
         $user->update(['is_approved' => true]);
-        return response()->json(['message' => 'User approved successfully.', 'user' => $user->load('barangay')]);
+
+        // Auto-send SMS notification to the approved user
+        if ($user->phone) {
+            try {
+                $smsSender = new SmsSender();
+                $message = "Hi {$user->name}! Your BarangayPGT account has been approved. You can now open the app and access all features. Welcome!";
+                $result = $smsSender->send($user->phone, $message);
+
+                SmsLog::create([
+                    'admin_id'            => $request->user()->id,
+                    'recipient_phone'     => $user->phone,
+                    'message_content'     => $message,
+                    'status'              => $result['success'] ? 'sent' : 'failed',
+                    'provider_message_id' => $result['sid'] ?? null,
+                    'error_message'       => isset($result['error']) ? substr($result['error'], 0, 255) : null,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Approval SMS failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+                // SMS failure doesn't block approval
+            }
+        }
+
+        return response()->json([
+            'message' => 'User approved successfully.',
+            'user'    => $user->load('barangay'),
+        ]);
     }
 
     public function rejectUser(User $user)

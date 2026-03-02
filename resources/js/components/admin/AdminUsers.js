@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from "react";
 import api from "../../services/api";
 import { useToast } from "../../contexts/ToastContext";
-import AdminSmsButton from "./AdminSmsButton";
+import {
+    HiCheckCircle,
+    HiXCircle,
+    HiIdentification,
+    HiPhone,
+    HiMail,
+    HiLocationMarker,
+    HiX,
+} from "react-icons/hi";
 
 export default function AdminUsers() {
     const toast = useToast();
@@ -13,6 +21,12 @@ export default function AdminUsers() {
         is_approved: "",
     });
     const [barangays, setBarangays] = useState([]);
+    const [expandedUser, setExpandedUser] = useState(null);
+    const [lightbox, setLightbox] = useState({
+        open: false,
+        src: "",
+        label: "",
+    });
 
     useEffect(() => {
         fetchUsers();
@@ -58,7 +72,8 @@ export default function AdminUsers() {
     };
 
     const handleApprove = async (user) => {
-        if (!window.confirm(`Are you sure you want to approve ${user.name}?`)) return;
+        if (!window.confirm(`Are you sure you want to approve ${user.name}?`))
+            return;
         try {
             await api.post(`/admin/users/${user.id}/approve`);
             toast.success("User approved!");
@@ -69,7 +84,12 @@ export default function AdminUsers() {
     };
 
     const handleReject = async (user) => {
-        if (!window.confirm(`Are you sure you want to reject and delete ${user.name}?`)) return;
+        if (
+            !window.confirm(
+                `Are you sure you want to reject and delete ${user.name}?`,
+            )
+        )
+            return;
         try {
             await api.delete(`/admin/users/${user.id}/reject`);
             toast.success("User rejected and removed.");
@@ -79,17 +99,20 @@ export default function AdminUsers() {
         }
     };
 
+    const formatPhone = (phone) => {
+        if (!phone) return null;
+        return phone.startsWith("+") ? phone : `+63${phone.slice(1)}`;
+    };
+
     if (loading) {
         return <div className="loading-spinner">Loading users...</div>;
     }
 
     return (
         <div className="admin-users">
-            <div className="admin-header">
+            <div className="admin-users__header">
                 <h2>Users Management</h2>
-
-                {/* Filters */}
-                <div className="filters">
+                <div className="admin-users__filters">
                     <select
                         value={filters.role}
                         onChange={(e) =>
@@ -105,7 +128,10 @@ export default function AdminUsers() {
                     <select
                         value={filters.is_approved}
                         onChange={(e) =>
-                            setFilters({ ...filters, is_approved: e.target.value })
+                            setFilters({
+                                ...filters,
+                                is_approved: e.target.value,
+                            })
                         }
                         className="form-select"
                     >
@@ -125,60 +151,137 @@ export default function AdminUsers() {
                         className="form-select"
                     >
                         <option value="">All Barangays</option>
-                        {barangays.map((barangay) => (
-                            <option key={barangay.id} value={barangay.id}>
-                                {barangay.name}
+                        {barangays.map((b) => (
+                            <option key={b.id} value={b.id}>
+                                {b.name}
                             </option>
                         ))}
                     </select>
                 </div>
             </div>
 
-            <div className="users-table">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>IDs</th>
-                            <th>Barangay</th>
-                            <th>Joined</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {users.map((user) => (
-                            <tr key={user.id}>
-                                <td>
-                                    <div className="user-info">
-                                        {user.avatar && (
-                                            <img
-                                                src={user.avatar}
-                                                alt={user.name}
-                                                className="user-avatar"
-                                            />
-                                        )}
-                                        <span>{user.name}</span>
+            {/* ── Card list (mobile-first, works on all sizes) ── */}
+            <div className="admin-users__list">
+                {users.map((user) => (
+                    <div
+                        key={user.id}
+                        className={`user-card ${!user.is_approved ? "user-card--pending" : ""}`}
+                    >
+                        <div
+                            className="user-card__top"
+                            onClick={() =>
+                                setExpandedUser(
+                                    expandedUser === user.id ? null : user.id,
+                                )
+                            }
+                        >
+                            <div className="user-card__avatar">
+                                {user.avatar ? (
+                                    <img src={user.avatar} alt={user.name} />
+                                ) : (
+                                    <span>
+                                        {user.name?.charAt(0).toUpperCase()}
+                                    </span>
+                                )}
+                            </div>
+                            <div className="user-card__info">
+                                <div className="user-card__name">
+                                    {user.name}
+                                </div>
+                                <div className="user-card__email">
+                                    {user.email}
+                                </div>
+                            </div>
+                            <div className="user-card__status">
+                                {user.is_approved ? (
+                                    <span className="badge badge-success">
+                                        Approved
+                                    </span>
+                                ) : (
+                                    <span className="badge badge-warning">
+                                        Pending
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {expandedUser === user.id && (
+                            <div className="user-card__details">
+                                <div className="user-card__detail-row">
+                                    <HiPhone className="user-card__icon" />
+                                    <span>
+                                        {formatPhone(user.phone) || "No phone"}
+                                    </span>
+                                </div>
+                                <div className="user-card__detail-row">
+                                    <HiLocationMarker className="user-card__icon" />
+                                    <span>
+                                        {user.barangay?.name || "N/A"}
+                                        {user.purok_address
+                                            ? ` — ${user.purok_address}`
+                                            : ""}
+                                    </span>
+                                </div>
+                                {user.address && (
+                                    <div className="user-card__detail-row">
+                                        <HiLocationMarker className="user-card__icon" />
+                                        <span>{user.address}</span>
                                     </div>
-                                </td>
-                                <td>{user.email}</td>
-                                <td>
-                                    {user.phone ? (
-                                        <span className="phone-number">
-                                            {user.phone.startsWith("+")
-                                                ? user.phone
-                                                : `+63${user.phone.slice(1)}`}
-                                        </span>
-                                    ) : (
-                                        <span className="text-muted">
-                                            No phone
-                                        </span>
-                                    )}
-                                </td>
-                                <td>
+                                )}
+                                <div className="user-card__detail-row">
+                                    <HiMail className="user-card__icon" />
+                                    <span>
+                                        Joined{" "}
+                                        {new Date(
+                                            user.created_at,
+                                        ).toLocaleDateString()}
+                                    </span>
+                                </div>
+
+                                {/* ID photos */}
+                                {(user.id_front_path || user.id_back_path) && (
+                                    <div className="user-card__ids">
+                                        <HiIdentification className="user-card__icon" />
+                                        <div className="user-card__id-links">
+                                            {user.id_front_path && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline"
+                                                    onClick={() =>
+                                                        setLightbox({
+                                                            open: true,
+                                                            src: `/storage/${user.id_front_path}`,
+                                                            label: `${user.name} — ID Front`,
+                                                        })
+                                                    }
+                                                >
+                                                    ID Front
+                                                </button>
+                                            )}
+                                            {user.id_back_path && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-sm btn-outline"
+                                                    onClick={() =>
+                                                        setLightbox({
+                                                            open: true,
+                                                            src: `/storage/${user.id_back_path}`,
+                                                            label: `${user.name} — ID Back`,
+                                                        })
+                                                    }
+                                                >
+                                                    ID Back
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Role */}
+                                <div className="user-card__detail-row">
+                                    <span className="user-card__label">
+                                        Role:
+                                    </span>
                                     <select
                                         value={user.role}
                                         onChange={(e) =>
@@ -194,45 +297,35 @@ export default function AdminUsers() {
                                         </option>
                                         <option value="admin">Admin</option>
                                     </select>
-                                </td>
-                                <td>
-                                    {user.is_approved ? (
-                                        <span className="badge badge-success">Approved</span>
-                                    ) : (
-                                        <span className="badge badge-warning">Pending</span>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="user-card__actions">
+                                    {!user.is_approved && (
+                                        <>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() =>
+                                                    handleApprove(user)
+                                                }
+                                            >
+                                                <HiCheckCircle /> Approve
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() =>
+                                                    handleReject(user)
+                                                }
+                                            >
+                                                <HiXCircle /> Reject
+                                            </button>
+                                        </>
                                     )}
-                                </td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: '5px' }}>
-                                        {user.id_front_path && (
-                                            <a href={`/storage/${user.id_front_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem' }}>Front</a>
-                                        )}
-                                        {user.id_back_path && (
-                                            <a href={`/storage/${user.id_back_path}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.8rem' }}>Back</a>
-                                        )}
-                                    </div>
-                                </td>
-                                <td>{user.barangay?.name || "N/A"}</td>
-                                <td>
-                                    {new Date(
-                                        user.created_at,
-                                    ).toLocaleDateString()}
-                                </td>
-                                <td>
-                                    <div className="action-buttons">
-                                        {!user.is_approved && (
-                                            <>
-                                                <button className="btn btn-sm btn-primary" onClick={() => handleApprove(user)}>Approve</button>
-                                                <button className="btn btn-sm btn-danger" onClick={() => handleReject(user)}>Reject</button>
-                                            </>
-                                        )}
-                                        <AdminSmsButton user={user} />
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
 
                 {users.length === 0 && (
                     <div className="empty-state">
@@ -240,6 +333,32 @@ export default function AdminUsers() {
                     </div>
                 )}
             </div>
+
+            {/* ── Photo Lightbox ── */}
+            {lightbox.open && (
+                <div
+                    className="lightbox-overlay"
+                    onClick={() =>
+                        setLightbox({ open: false, src: "", label: "" })
+                    }
+                >
+                    <div
+                        className="lightbox-content"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            className="lightbox-close"
+                            onClick={() =>
+                                setLightbox({ open: false, src: "", label: "" })
+                            }
+                        >
+                            <HiX />
+                        </button>
+                        <p className="lightbox-label">{lightbox.label}</p>
+                        <img src={lightbox.src} alt={lightbox.label} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

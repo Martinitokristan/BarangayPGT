@@ -12,6 +12,7 @@ import {
     HiArrowLeft,
     HiMenu,
     HiCalendar,
+    HiUsers,
 } from "react-icons/hi";
 import { RiShieldStarFill } from "react-icons/ri";
 
@@ -56,8 +57,13 @@ export default function AdminLayout({ children }) {
             label: "Manage Posts",
         },
         {
+            to: "/admin/users",
+            icon: <HiUsers />,
+            label: "Manage Users",
+        },
+        {
             to: "/admin/sms",
-            icon: <HiBell />, // You can use a better SMS icon if available
+            icon: <HiBell />,
             label: "SMS Management",
         },
         {
@@ -177,7 +183,6 @@ export default function AdminLayout({ children }) {
                     >
                         <HiMenu />
                     </button>
-
                 </header>
                 <div className="admin-content">{children}</div>
             </div>
