@@ -34,12 +34,10 @@ import "../../../sass/pages/_post-card.scss";
 import CommentModal from "./CommentModal";
 
 const REACTION_CONFIG = {
-    like: { emoji: "👍", label: "Like", color: "#3b5998" },
-    love: { emoji: "❤️", label: "Love", color: "#e74c3c" },
-    haha: { emoji: "😆", label: "Haha", color: "#f1c40f" },
-    wow: { emoji: "😮", label: "Wow", color: "#f39c12" },
-    sad: { emoji: "😢", label: "Sad", color: "#3498db" },
-    angry: { emoji: "😡", label: "Angry", color: "#c0392b" },
+    Like: { emoji: "👍", label: "Like", color: "#3b5998", isGif: false },
+    heart: { emoji: "❤️", label: "Heart", color: "#e74c3c", isGif: false },
+    support: { emoji: "🤝", label: "Support", color: "#27ae60", isGif: false },
+    sad: { emoji: "😢", label: "Sad", color: "#3498db", isGif: false },
 };
 
 const URGENCY_STYLES = {
@@ -482,7 +480,11 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                     >
                         {userReaction ? (
                             <span className="action-bar-emoji">
-                                {REACTION_CONFIG[userReaction].emoji}
+                                {REACTION_CONFIG[userReaction].isGif ? (
+                                    <img src={REACTION_CONFIG[userReaction].emoji} alt={REACTION_CONFIG[userReaction].label} style={{ width: '18px', height: '18px' }} />
+                                ) : (
+                                    REACTION_CONFIG[userReaction].emoji
+                                )}
                             </span>
                         ) : (
                             <HiOutlineThumbUp />
@@ -524,7 +526,11 @@ export default function PostCard({ post, onUpdate, onDelete }) {
                                             </span>
                                         )}
                                         <span className="reaction-picker-emoji">
-                                            {config.emoji}
+                                            {config.isGif ? (
+                                                <img src={config.emoji} alt={config.label} style={{ width: '24px', height: '24px' }} />
+                                            ) : (
+                                                config.emoji
+                                            )}
                                         </span>
                                     </button>
                                 ),

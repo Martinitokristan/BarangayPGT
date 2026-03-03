@@ -14,6 +14,7 @@ export default function SmsSender() {
     useEffect(() => {
         fetchLogs();
     }, []);
+    
 
     const fetchLogs = async () => {
         try {

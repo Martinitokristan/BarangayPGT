@@ -12,7 +12,7 @@ class ReactionController extends Controller
     public function toggle(Request $request, Post $post)
     {
         $validator = \Validator::make($request->all(), [
-            'type' => 'required|in:like,love,haha,wow,sad,angry,support,urgent',
+            'type' => 'required|in:Like,heart,support,sad',
         ]);
 
         if ($validator->fails()) {
