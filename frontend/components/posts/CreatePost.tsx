@@ -59,8 +59,8 @@ export default function CreatePost() {
 
             await api.post('/posts', fd, {
                 headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (ev: { loaded: number; total: number }) =>
-                    setUploadProgress(Math.round((ev.loaded * 100) / ev.total)),
+                onUploadProgress: (ev: any) =>
+                    setUploadProgress(ev.total ? Math.round((ev.loaded * 100) / ev.total) : 100),
             });
 
             showToast('Post created successfully!', 'success');
