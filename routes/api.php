@@ -20,12 +20,7 @@ use App\Http\Controllers\Api\PasswordResetController;
 */
 
 // Public routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/register/verify', [AuthController::class, 'verifyRegistration']);
-Route::get('/register/confirm', [AuthController::class, 'confirmRegistration']);
-Route::get('/register/poll', [AuthController::class, 'pollRegistrationStatus']);
-Route::post('/register/resend-otp', [AuthController::class, 'resendRegistrationOtp'])
-    ->middleware(['throttle:6,1']);
+Route::post('/auth/register', [AuthController::class, 'provisionSupabaseUser']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/barangays', [AuthController::class, 'barangays']);
 
@@ -45,10 +40,15 @@ Route::post('/email/resend-code', [\App\Http\Controllers\Api\VerificationControl
     ->name('verification.resend');
 
 // Authenticated routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:api')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // Device Verification
+    Route::post('/device/check', [\App\Http\Controllers\Api\DeviceController::class, 'check']);
+    Route::post('/device/resend-code', [\App\Http\Controllers\Api\DeviceController::class, 'resendCode']);
+    Route::post('/device/verify', [\App\Http\Controllers\Api\DeviceController::class, 'verify']);
 
     // Email verification resend (used from /verify-pending page after registration)
     Route::post('/email/verification-notification', [\App\Http\Controllers\Api\VerificationController::class, 'resendVerificationLink'])

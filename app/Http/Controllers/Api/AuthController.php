@@ -18,74 +18,44 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Step 1 of registration: validate, store files, save to pending_registrations
-     * and send a 6-digit OTP to the user's email.
-     * The actual User record is NOT created here — it is created in verifyRegistration()
-     * once the user proves ownership of their email address.
+     * Provisions a local User record using the user data passed from the frontend
+     * after a successful Supabase Authentication sign-up.
      */
-    public function register(Request $request)
+    public function provisionSupabaseUser(Request $request)
     {
         $request->validate([
-            'name'         => 'required|string|max:255',
+            'supabase_uid' => 'required|string|unique:users',
             'email'        => 'required|string|email|max:255|unique:users',
-            'password'     => 'required|string|min:8|confirmed',
-            'barangay_id'  => 'required|exists:barangays,id',
+            'name'         => 'required|string|max:255',
             'phone'        => 'required|string|max:20',
+            'barangay_id'  => 'required|exists:barangays,id',
+            'address'      => 'required|string|max:255',
+            'purok_address'=> 'required|string|max:255',
             'sex'          => 'required|in:male,female,other',
             'birth_date'   => 'required|date|before:today',
-            'age'          => 'nullable|integer|min:0|max:150',
-            'purok_address'=> 'required|string|max:255',
-            'valid_id'     => 'required|image|mimes:jpeg,png,jpg|max:5120',
-            'device_token' => 'nullable|string|max:64',
         ]);
 
-        $birthDate     = Carbon::parse($request->birth_date);
-        $calculatedAge = $birthDate->age;
-        $otp           = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $birthDate = Carbon::parse($request->birth_date);
 
-        // Store ID photo to a staging folder — moved to resident_ids/ after verification
-        $validIdPath = $request->file('valid_id')->store('resident_ids_pending', 'public');
-
-        // Replace any previous pending registration for this email
-        // (e.g. user closed the tab and re-submitted the form)
-        $existing = PendingRegistration::where('email', $request->email)->first();
-        if ($existing) {
-            Storage::disk('public')->delete($existing->valid_id_path);
-            $existing->delete();
-        }
-
-        PendingRegistration::create([
-            'email'          => $request->email,
-            'name'           => $request->name,
-            'password'       => Hash::make($request->password),
-            'barangay_id'    => $request->barangay_id,
-            'phone'          => $request->phone,
-            'purok_address'  => $request->purok_address,
-            'sex'            => $request->sex,
-            'birth_date'     => $birthDate->toDateString(),
-            'age'            => $calculatedAge,
-            'valid_id_path'  => $validIdPath,
-            'otp_code'       => $otp,
-            'otp_expires_at' => now()->addMinutes(15),
-            'device_token'   => $request->device_token,
+        $user = User::create([
+            'supabase_uid'  => $request->supabase_uid,
+            'email'         => $request->email,
+            'name'          => $request->name,
+            // Provide a random dummy password since auth is handled by Supabase
+            'password'      => Hash::make(bin2hex(random_bytes(16))),
+            'role'          => 'resident',
+            'barangay_id'   => $request->barangay_id,
+            'phone'         => $request->phone,
+            'purok_address' => $request->purok_address,
+            'sex'           => $request->sex,
+            'birth_date'    => $birthDate->toDateString(),
+            'age'           => $birthDate->age,
+            'is_approved'   => false,
         ]);
-
-        $verifyUrl = rtrim(config('app.url'), '/') . '/api/register/confirm'
-            . '?email=' . urlencode($request->email)
-            . '&code=' . $otp;
-
-        try {
-            (new BrevoApiMailer())->sendRegistrationLink($request->email, $request->name, $verifyUrl);
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Registration verification email failed', [
-                'email' => $request->email,
-                'error' => $e->getMessage(),
-            ]);
-        }
 
         return response()->json([
-            'message' => 'A verification link has been sent to your email. Click the link to complete registration.',
-            'email'   => $request->email,
+            'message' => 'User provisioned successfully.',
+            'user'    => $user,
         ], 201);
     }
 

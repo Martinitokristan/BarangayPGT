@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ["php82", "php82Extensions.pdo_mysql", "php82Extensions.mysqli", "php82Packages.composer", "nodejs_18", "npm-9_x", "nginx"]
-
-[phases.build]
-cmds = ["npm run prod"]
-
-[start]
-cmd = "php artisan config:clear && php artisan migrate:fresh --seed --force && php artisan storage:link && php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"

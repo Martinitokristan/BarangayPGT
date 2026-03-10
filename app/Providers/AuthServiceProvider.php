@@ -25,6 +25,13 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
+        \Illuminate\Support\Facades\Auth::extend('supabase', function ($app, $name, array $config) {
+            return new \App\Guards\SupabaseGuard(
+                \Illuminate\Support\Facades\Auth::createUserProvider($config['provider']),
+                $app->make('request')
+            );
+        });
+
         \Illuminate\Auth\Notifications\VerifyEmail::createUrlUsing(function ($notifiable) {
             $frontendUrl = config('app.url') . '/verify-email';
 

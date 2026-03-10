@@ -17,6 +17,7 @@ class CreateUsersTable extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->uuid('supabase_uid')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('verification_code', 6)->nullable();
             $table->timestamp('verification_code_expires_at')->nullable();

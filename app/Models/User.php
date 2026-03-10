@@ -15,6 +15,7 @@ class User extends Authenticatable implements MustVerifyEmail
     protected $fillable = [
         'name',
         'email',
+        'supabase_uid',
         'password',
         'role',
         'barangay_id',
