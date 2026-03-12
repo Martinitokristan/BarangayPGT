@@ -54,21 +54,67 @@ class AdminController extends Controller
 
     public function users(Request $request)
     {
+        $role = $request->query('role');
+        $barangayId = $request->query('barangay_id');
+        $isApprovedFilter = $request->query('is_approved');
+
+        // Base query for existing users
         $query = User::with('barangay');
 
-        if ($request->has('role')) {
-            $query->where('role', $request->role);
+        if ($role) {
+            $query->where('role', $role);
         }
 
-        if ($request->has('barangay_id')) {
-            $query->where('barangay_id', $request->barangay_id);
+        if ($barangayId) {
+            $query->where('barangay_id', $barangayId);
         }
 
-        if ($request->has('is_approved')) {
-            $query->where('is_approved', filter_var($request->is_approved, FILTER_VALIDATE_BOOLEAN));
+        // Apply strict approval filter if provided
+        if ($isApprovedFilter !== null && $isApprovedFilter !== '') {
+            $isApprovedBool = filter_var($isApprovedFilter, FILTER_VALIDATE_BOOLEAN);
+            $query->where('is_approved', $isApprovedBool);
         }
 
-        return response()->json($query->orderBy('created_at', 'desc')->paginate(20));
+        // Get the paginated results for Users table
+        $usersPaginator = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // If we are looking for unapproved, or no specific filter (All Statuses),
+        // we must check the PendingRegistration table too.
+        if (($isApprovedFilter === '0' || $isApprovedFilter === '' || $isApprovedFilter === null) && (!$role || $role === 'resident')) {
+            $pendingQuery = \App\Models\PendingRegistration::with('barangay')->whereNotNull('email_verified_at');
+            
+            if ($barangayId) {
+                $pendingQuery->where('barangay_id', $barangayId);
+            }
+
+            $pendingRecords = $pendingQuery->orderBy('created_at', 'desc')->get();
+            
+            // Map pending records to match the User model structure for the frontend
+            $transformedPending = $pendingRecords->map(function ($item) {
+                $data = $item->toArray();
+                $data['is_pending_registration'] = true;
+                $data['is_approved'] = false;
+                $data['role'] = 'resident';
+                $data['barangay'] = $item->barangay;
+                
+                // Ensure valid_id_path has the pending prefix if folder is missing
+                if ($item->valid_id_path && !str_starts_with($item->valid_id_path, 'resident_ids_pending/')) {
+                    $data['valid_id_path'] = 'resident_ids_pending/' . $item->valid_id_path;
+                }
+                
+                return $data;
+            });
+
+            // If we have pending users, prepend them to the collection of the current page.
+            if ($transformedPending->isNotEmpty()) {
+                $currentCollection = $usersPaginator->getCollection();
+                // Concat is better than merge here to avoid ID collision overwrites
+                $mergedCollection = $transformedPending->concat($currentCollection);
+                $usersPaginator->setCollection($mergedCollection);
+            }
+        }
+
+        return response()->json($usersPaginator);
     }
 
     public function updateUserRole(Request $request, User $user)
@@ -82,9 +128,65 @@ class AdminController extends Controller
         return response()->json($user->load('barangay'));
     }
 
-    public function approveUser(Request $request, User $user)
+    public function approveUser(Request $request, $id)
     {
-        $user->update(['is_approved' => true]);
+        // 1. Check if it's a PendingRegistration waiting to be created
+        $pending = \App\Models\PendingRegistration::find($id);
+
+        if ($pending) {
+            $originalPath = $pending->valid_id_path;
+            
+            // Normalize path for file movement
+            $sourcePath = (str_starts_with($originalPath, 'resident_ids_pending/')) 
+                ? $originalPath 
+                : 'resident_ids_pending/' . $originalPath;
+                
+            $targetPath = str_replace('resident_ids_pending/', 'resident_ids/', $sourcePath);
+
+            // Move the file if it exists
+            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($sourcePath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->move($sourcePath, $targetPath);
+                $finalPath = $targetPath;
+            } elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($originalPath)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->move($originalPath, $targetPath);
+                $finalPath = $targetPath;
+            } else {
+                // If file is missing, keep the relative path as target to avoid 404s if file is found later
+                $finalPath = $targetPath;
+            }
+
+            $user = User::create([
+                'name'              => $pending->name,
+                'email'             => $pending->email,
+                'password'          => $pending->password,
+                'role'              => 'resident',
+                'barangay_id'       => $pending->barangay_id,
+                'phone'             => $pending->phone,
+                'purok_address'     => $pending->purok_address,
+                'sex'               => $pending->sex,
+                'birth_date'        => $pending->birth_date,
+                'age'               => $pending->age,
+                'valid_id_path'     => $finalPath,
+                'is_approved'       => true,
+                'email_verified_at' => $pending->email_verified_at ?? now(),
+            ]);
+
+            if ($pending->device_token) {
+                \App\Models\TrustedDevice::create([
+                    'user_id' => $user->id,
+                    'device_token' => $pending->device_token,
+                    'device_name' => 'Registered Device',
+                    'ip_address' => $request->ip() ?? '0.0.0.0',
+                    'last_used_at' => now(),
+                ]);
+            }
+
+            $pending->delete();
+        } else {
+            // 2. Fallback: it might already be an unapproved User
+            $user = User::findOrFail($id);
+            $user->update(['is_approved' => true]);
+        }
 
         // Auto-send SMS notification to the approved user
         if ($user->phone) {
@@ -113,17 +215,23 @@ class AdminController extends Controller
         ]);
     }
 
-    public function rejectUser(User $user)
+    public function rejectUser($id)
     {
-        // Delete the uploaded ID images from storage if they exist
-        if ($user->id_front_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->id_front_path);
+        $pending = \App\Models\PendingRegistration::find($id);
+
+        if ($pending) {
+            if ($pending->valid_id_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($pending->valid_id_path);
+            }
+            $pending->delete();
+        } else {
+            $user = User::findOrFail($id);
+            if ($user->valid_id_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->valid_id_path);
+            }
+            $user->delete();
         }
-        if ($user->id_back_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->id_back_path);
-        }
-        
-        $user->delete();
+
         return response()->json(['message' => 'User rejected and removed successfully.']);
     }
 

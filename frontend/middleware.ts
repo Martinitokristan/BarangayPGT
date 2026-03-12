@@ -1,58 +1,44 @@
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({ request });
-
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll();
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) =>
-                        request.cookies.set(name, value)
-                    );
-                    supabaseResponse = NextResponse.next({ request });
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    );
-                },
-            },
-        }
-    );
-
-    // Refresh session if expired
-    const { data: { user } } = await supabase.auth.getUser();
+    let response = NextResponse.next();
 
     const { pathname } = request.nextUrl;
 
-    // Guest-only routes (redirect to / if already logged in)
-    const guestRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
-    if (user && guestRoutes.some(r => pathname.startsWith(r))) {
-        return NextResponse.redirect(new URL('/', request.url));
+    // ── Static / public assets — skip auth check entirely ──
+    if (
+        pathname.startsWith('/_next') ||
+        pathname.startsWith('/favicon') ||
+        pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico)$/)
+    ) {
+        return response;
     }
 
-    // Protected routes (redirect to /login if not logged in)
-    const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
-    const isPublic = publicRoutes.some(r => pathname.startsWith(r));
-    if (!user && !isPublic) {
+    // ── Guest-only pages: no auth check needed at all ──
+    const guestRoutes = ['/login', '/register', '/verify-registration', '/verify-pending', '/forgot-password', '/reset-password'];
+    const isGuestRoute = guestRoutes.some(r => pathname.startsWith(r));
+
+    const token = request.cookies.get('token')?.value;
+
+    // For guest routes (like login/register), redirect to home if already logged in
+    if (isGuestRoute) {
+        if (token) {
+            return NextResponse.redirect(new URL('/', request.url));
+        }
+        return response;
+    }
+
+    // Public route that works with or without auth
+    if (pathname === '/') {
+        return response;
+    }
+
+    // Everything else requires a valid token
+    if (!token) {
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Admin routes
-    if (pathname.startsWith('/admin')) {
-        // We can't check DB role in middleware efficiently, so just ensure user is logged in.
-        // AdminRoute component on the client-side will do the actual role check.
-        if (!user) {
-            return NextResponse.redirect(new URL('/login', request.url));
-        }
-    }
-
-    return supabaseResponse;
+    return response;
 }
 
 export const config = {

@@ -1,0 +1,5 @@
+secret_len=88
+b64_len=64
+test_raw=OK
+test_b64=OK
+decode_params=3

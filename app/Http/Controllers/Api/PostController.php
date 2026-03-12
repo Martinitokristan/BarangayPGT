@@ -48,7 +48,14 @@ class PostController extends Controller
         }
 
         // Order: urgent posts first, then by latest
-        $posts = $query->orderByRaw("FIELD(urgency_level, 'high', 'medium', 'low')")
+        $posts = $query->orderByRaw("
+            CASE urgency_level
+                WHEN 'high' THEN 1
+                WHEN 'medium' THEN 2
+                WHEN 'low' THEN 3
+                ELSE 4
+            END
+        ")
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 

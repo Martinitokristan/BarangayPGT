@@ -1,0 +1,111 @@
+@use "sass:color";
+@import "../base/variables";
+
+// ==========================================================
+// Post Detail Page
+// ==========================================================
+
+.post-detail-container {
+    max-width: $container-max;
+    margin: 0 auto;
+}
+
+.back-btn {
+    margin-bottom: $space-4;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-2;
+
+    svg {
+        font-size: 1.1em;
+    }
+}
+
+.admin-panel {
+    background-color: $bg-white;
+    border-radius: $radius-md;
+    padding: $space-6;
+    margin-top: $space-5;
+    box-shadow: $shadow;
+    border: 1px solid $border-color;
+    border-left: 4px solid $warning;
+
+    h3 {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        margin-bottom: 0;
+        color: $text-primary;
+
+        svg {
+            color: $warning;
+            font-size: 1.2em;
+        }
+    }
+
+    form {
+        margin-top: $space-5;
+    }
+}
+
+.admin-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    padding: $space-1 0;
+    border-radius: $radius;
+    transition: all $transition-fast;
+
+    .btn-ghost {
+        background: none;
+        border: none;
+        color: $text-muted;
+        font-size: 1.25rem;
+        cursor: pointer;
+        padding: $space-1;
+        display: flex;
+        align-items: center;
+
+        &:hover {
+            color: $text-primary;
+        }
+    }
+}
+
+.response-success-banner {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-4;
+    margin-top: $space-4;
+    background-color: $success-light;
+    border-radius: $radius;
+    border: 1px solid rgba($success, 0.2);
+
+    svg {
+        font-size: 1.5rem;
+        color: $success;
+        flex-shrink: 0;
+    }
+
+    span {
+        flex: 1;
+        font-size: $font-size-sm;
+        font-weight: 600;
+        color: color.adjust($success, $lightness: -10%);
+    }
+}
+
+.admin-form-actions {
+    display: flex;
+    gap: $space-3;
+    margin-top: $space-4;
+}
+
+.post-actions-panel {
+    margin-top: $space-4;
+    display: flex;
+    justify-content: flex-end;
+}

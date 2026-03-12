@@ -1,0 +1,119 @@
+// ==========================================================
+// Forms
+// ==========================================================
+
+.form-group {
+    margin-bottom: $space-5;
+    flex: 1;
+
+    label {
+        display: block;
+        font-size: $font-size-sm;
+        font-weight: 600;
+        color: $text-primary;
+        margin-bottom: $space-2;
+    }
+
+    input,
+    textarea,
+    select {
+        width: 100%;
+        padding: $space-3 $space-4;
+        font-size: $font-size-base;
+        color: $text-primary;
+        background-color: $bg-white;
+        border: 2px solid $border-color;
+        border-radius: $radius;
+        transition:
+            border-color $transition-fast,
+            box-shadow $transition-fast;
+        outline: none;
+
+        &::placeholder {
+            color: $text-muted;
+        }
+
+        &:focus {
+            border-color: $primary;
+            box-shadow: 0 0 0 3px rgba($primary, 0.1);
+        }
+    }
+
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    select {
+        cursor: pointer;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right $space-3 center;
+        background-size: 20px;
+        padding-right: $space-10;
+    }
+
+    input[type="file"] {
+        padding: $space-3;
+        cursor: pointer;
+
+        &::file-selector-button {
+            background-color: $primary;
+            color: $text-white;
+            border: none;
+            padding: $space-2 $space-4;
+            border-radius: $radius-sm;
+            font-weight: 600;
+            font-size: $font-size-sm;
+            cursor: pointer;
+            margin-right: $space-3;
+            transition: background-color $transition-fast;
+
+            &:hover {
+                background-color: $primary-dark;
+            }
+        }
+    }
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-4;
+
+    @media (max-width: $bp-sm) {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-error {
+    display: block;
+    color: $danger;
+    font-size: $font-size-xs;
+    margin-top: $space-1;
+    font-weight: 500;
+}
+
+.form-actions {
+    display: flex;
+    gap: $space-3;
+    justify-content: flex-end;
+    margin-top: $space-6;
+}
+
+.image-preview {
+    margin-top: $space-3;
+    position: relative;
+    display: inline-block;
+
+    img {
+        max-height: 200px;
+        border-radius: $radius;
+        border: 2px solid $border-color;
+    }
+
+    .btn {
+        margin-top: $space-2;
+    }
+}

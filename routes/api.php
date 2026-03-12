@@ -20,7 +20,11 @@ use App\Http\Controllers\Api\PasswordResetController;
 */
 
 // Public routes
-Route::post('/auth/register', [AuthController::class, 'provisionSupabaseUser']);
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::get('/auth/register/confirm', [AuthController::class, 'confirmRegistration']);
+Route::get('/auth/check-status', [AuthController::class, 'pollRegistrationStatus']);
+Route::post('/auth/register/resend-otp', [AuthController::class, 'resendRegistrationOtp'])
+    ->middleware(['throttle:6,1']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::get('/barangays', [AuthController::class, 'barangays']);
 
@@ -40,7 +44,7 @@ Route::post('/email/resend-code', [\App\Http\Controllers\Api\VerificationControl
     ->name('verification.resend');
 
 // Authenticated routes
-Route::middleware('auth:api')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
@@ -100,8 +104,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/users', [AdminController::class, 'users']);
         Route::put('/users/{user}/role', [AdminController::class, 'updateUserRole']);
-        Route::post('/users/{user}/approve', [AdminController::class, 'approveUser']);
-        Route::delete('/users/{user}/reject', [AdminController::class, 'rejectUser']);
+        Route::post('/users/{id}/approve', [AdminController::class, 'approveUser']);
+        Route::delete('/users/{id}/reject', [AdminController::class, 'rejectUser']);
         Route::get('/barangays', [AdminController::class, 'barangays']);
         Route::post('/barangays', [AdminController::class, 'storeBarangay']);
         

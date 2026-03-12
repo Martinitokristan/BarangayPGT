@@ -1,94 +1,165 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { RiShieldStarFill } from "react-icons/ri";
+import { HiMail, HiLockClosed, HiCheckCircle } from "react-icons/hi";
+import { useToast } from "@/contexts/ToastContext";
+import DeviceVerification from '@/components/auth/DeviceVerification';
 
 export default function Login() {
-    const { login } = useAuth();
-    const { showToast } = useToast();
+    const { login, pendingDeviceAuth } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const { showToast } = useToast();
 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    // Next.js replacement for location.state
+    const registered = searchParams.get("registered") === "true";
+    const registrationMessage = registered ? "Registration successful! Please log in." : null;
+
+    // Check if redirected after successful email verification
+    const verifiedMessage = searchParams.get("verified") === "true";
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError("");
         setLoading(true);
         try {
-            await login(email, password);
-            router.push('/');
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Login failed. Check your email and password.';
-            showToast(msg, 'error');
+            const result = await login(email, password);
+            if (result && result.device_trusted) {
+                router.refresh();
+                router.push("/");
+            }
+        } catch (err: any) {
+            const status = err.response?.data?.status;
+            
+            if (status === "pending_approval") {
+                localStorage.setItem("pendingEmail", email);
+                router.push("/verify-pending");
+                return;
+            }
+
+            if (status === "unverified_email") {
+                setError("Please verify your email address first. Check your inbox for the link.");
+                return;
+            }
+
+            setError(
+                err.response?.data?.message ||
+                err.message ||
+                "Invalid credentials. Please try again.",
+            );
         } finally {
             setLoading(false);
         }
     };
 
+    if (pendingDeviceAuth) {
+        return <DeviceVerification />;
+    }
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4">
-            <div className="w-full max-w-md">
-                {/* Logo */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 text-white text-2xl font-bold mb-4 shadow-lg">
-                        B
-                    </div>
-                    <h1 className="text-2xl font-bold text-gray-900">BarangayPGT</h1>
-                    <p className="text-gray-500 mt-1">Sign in to your account</p>
+        <div className="auth-container">
+            <div className="auth-card">
+                <div className="auth-header">
+                    <span className="auth-icon">
+                        <RiShieldStarFill />
+                    </span>
+                    <h1>Barangay Online</h1>
+                    <p>Welcome back! Please sign in.</p>
                 </div>
 
-                {/* Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                Email address
-                            </label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@example.com"
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
-                            />
+                {(registrationMessage || verifiedMessage) && (
+                    <div
+                        className="alert alert-success"
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                        }}
+                    >
+                        <HiCheckCircle
+                            style={{ flexShrink: 0, fontSize: "1.2rem" }}
+                        />
+                        <span>
+                            {verifiedMessage
+                                ? "Email verified successfully! Please log in to continue."
+                                : registrationMessage}
+                        </span>
+                    </div>
+                )}
+
+                {error && <div className="alert alert-error">{error}</div>}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="email">
+                            <HiMail /> Email Address
+                        </label>
+                        <input
+                            id="email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="Enter your email"
+                            required
+                            autoCapitalize="none"
+                            autoCorrect="off"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="password">
+                            <HiLockClosed /> Password
+                        </label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter your password"
+                            required
+                        />
+                        {/* Forgot Password link — shown inline for quick access */}
+                        <div style={{ textAlign: "right", marginTop: "4px" }}>
+                            <Link
+                                href="/forgot-password"
+                                style={{
+                                    fontSize: "0.82rem",
+                                    color: "#2563eb",
+                                }}
+                            >
+                                Forgot Password?
+                            </Link>
                         </div>
+                    </div>
 
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-sm font-medium text-gray-700">Password</label>
-                                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-                                    Forgot password?
-                                </Link>
-                            </div>
-                            <input
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition text-sm"
-                            />
-                        </div>
+                    <button
+                        type="submit"
+                        className="btn btn-primary btn-block"
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <span className="loading-spinner">
+                                Signing in...
+                            </span>
+                        ) : (
+                            "Sign In to Your Account"
+                        )}
+                    </button>
+                </form>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md text-sm"
-                        >
-                            {loading ? 'Signing in...' : 'Sign in'}
-                        </button>
-                    </form>
-
-                    <p className="text-center text-sm text-gray-500 mt-6">
-                        Don&apos;t have an account?{' '}
-                        <Link href="/register" className="text-blue-600 font-medium hover:underline">
-                            Create one
-                        </Link>
+                <div className="auth-footer">
+                    <p>
+                        Don&apos;t have an account?{" "}
+                        <Link href="/register">Register here</Link>
                     </p>
                 </div>
             </div>

@@ -1,0 +1,125 @@
+// ==========================================================
+// Confirm Modal
+// ==========================================================
+@import "../base/variables";
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: $space-4;
+    animation: modalFadeIn 0.2s ease forwards;
+}
+
+.modal-content {
+    background: $bg-white;
+    border-radius: $radius-lg;
+    padding: $space-8;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: $shadow-xl;
+    text-align: center;
+    position: relative;
+    animation: modalScaleIn 0.25s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+.modal-close {
+    position: absolute;
+    top: $space-3;
+    right: $space-3;
+    background: none;
+    border: none;
+    color: $text-muted;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: $space-1;
+    display: flex;
+    align-items: center;
+    border-radius: $radius;
+    transition: all $transition-fast;
+
+    &:hover {
+        color: $text-primary;
+        background: rgba(0, 0, 0, 0.1);
+    }
+}
+
+.modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-full;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto $space-4;
+    font-size: 1.75rem;
+
+    &.modal-icon-warning {
+        background: $warning-light;
+        color: $warning;
+    }
+
+    &.modal-icon-danger {
+        background: $danger-light;
+        color: $danger;
+    }
+
+    &.modal-icon-info {
+        background: $info-light;
+        color: $info;
+    }
+
+    &.modal-icon-success {
+        background: $success-light;
+        color: $success;
+    }
+}
+
+.modal-title {
+    font-size: $font-size-xl;
+    font-weight: 700;
+    color: $text-primary;
+    margin-bottom: $space-2;
+}
+
+.modal-message {
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    margin-bottom: $space-6;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    gap: $space-3;
+    justify-content: center;
+
+    .btn {
+        min-width: 120px;
+    }
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalScaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}

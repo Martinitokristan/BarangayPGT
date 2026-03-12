@@ -1,64 +1,97 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import api from '@/lib/api';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
-import UploadProgress from '@/components/ui/UploadProgress';
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
+import UploadProgress from "@/components/ui/UploadProgress";
+import api, { getStorageUrl } from "@/lib/api";
+import {
+    HiExclamation,
+    HiCloudUpload,
+    HiPhotograph,
+    HiX,
+    HiArrowLeft,
+} from "react-icons/hi";
 
-const INPUT_CLASS = 'w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 focus:bg-white transition-colors';
-const LABEL_CLASS = 'block text-sm font-medium text-gray-700 mb-1.5';
+interface EditPostProps {
+    postId: string;
+}
 
-export default function EditPost() {
-    const params = useParams();
-    const id = params.id as string;
+export default function EditPost({ postId }: EditPostProps) {
     const { user } = useAuth();
     const router = useRouter();
     const { showToast } = useToast();
-
-    const [form, setForm] = useState({ title: '', description: '', purpose: 'general', urgency_level: 'low' });
+    const [form, setForm] = useState({
+        title: "",
+        description: "",
+        purpose: "general",
+        urgency_level: "low",
+    });
     const [image, setImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [existingImage, setExistingImage] = useState<string | null>(null);
     const [removeImage, setRemoveImage] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string[]>>({});
+    const [errors, setErrors] = useState<any>({});
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const res = await api.get(`/posts/${id}`);
-                const post = res.data;
-                if (user?.id !== post.user_id && user?.role !== 'admin') {
-                    showToast("You don't have permission to edit this post.", 'error');
-                    router.push('/'); return;
-                }
-                setForm({ title: post.title, description: post.description, purpose: post.purpose, urgency_level: post.urgency_level });
-                if (post.image) setExistingImage(post.image.startsWith('http') ? post.image : `/storage/${post.image}`);
-            } catch { showToast('Failed to load post.', 'error'); router.push('/'); }
-            finally { setFetching(false); }
-        })();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id]);
+        fetchPost();
+    }, [postId]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    const fetchPost = async () => {
+        try {
+            const res = await api.get(`/posts/${postId}`);
+            const post = res.data;
+
+            if (user?.id !== post.user_id && user?.role !== "admin") {
+                showToast("You don't have permission to edit this post.", "error");
+                router.push("/");
+                return;
+            }
+
+            setForm({
+                title: post.title,
+                description: post.description,
+                purpose: post.purpose,
+                urgency_level: post.urgency_level,
+            });
+            if (post.image) {
+                setExistingImage(getStorageUrl(post.image));
+            }
+        } catch (e) {
+            showToast("Failed to load post.", "error");
+            router.push("/");
+        } finally {
+            setFetching(false);
+        }
+    };
+
+    const handleChange = (e: any) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { showToast('Image must be less than 5MB', 'error'); return; }
-        setImage(file);
-        setImagePreview(URL.createObjectURL(file));
-        setExistingImage(null);
-        setRemoveImage(false);
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("Image must be less than 5MB", "error");
+                return;
+            }
+            setImage(file);
+            setImagePreview(URL.createObjectURL(file));
+            setExistingImage(null);
+            setRemoveImage(false);
+        }
     };
 
     const handleRemoveImage = () => {
-        setImage(null); setImagePreview(null); setExistingImage(null); setRemoveImage(true);
+        setImage(null);
+        setImagePreview(null);
+        setExistingImage(null);
+        setRemoveImage(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -68,118 +101,195 @@ export default function EditPost() {
         setUploadProgress(image ? 0 : null);
 
         try {
-            const fd = new FormData();
-            fd.append('_method', 'PUT');
-            fd.append('title', form.title);
-            fd.append('description', form.description);
-            fd.append('purpose', form.purpose);
-            fd.append('urgency_level', form.urgency_level);
-            if (image) fd.append('image', image);
-            if (removeImage) fd.append('remove_image', '1');
+            const formData = new FormData();
+            formData.append("_method", "PUT");
+            formData.append("title", form.title);
+            formData.append("description", form.description);
+            formData.append("purpose", form.purpose);
+            formData.append("urgency_level", form.urgency_level);
+            if (image) formData.append("image", image);
+            if (removeImage) formData.append("remove_image", "1");
 
-            await api.post(`/posts/${id}`, fd, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-                onUploadProgress: (ev: any) =>
-                    setUploadProgress(ev.total ? Math.round((ev.loaded * 100) / ev.total) : 100),
+            await api.post(`/posts/${postId}`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+                onUploadProgress: (progressEvent: any) => {
+                    if (progressEvent.total) {
+                        const percent = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total,
+                        );
+                        setUploadProgress(percent);
+                    }
+                },
             });
 
-            showToast('Post updated successfully!', 'success');
-            router.push(`/posts/${id}`);
+            showToast("Post updated successfully!", "success");
+            router.push(`/posts/${postId}`);
         } catch (err: any) {
-            if (err.response?.data?.errors) { setErrors(err.response.data.errors); showToast('Please fix the errors.', 'error'); }
-            else showToast(err.response?.data?.message ?? 'Failed to update post.', 'error');
-        } finally { setLoading(false); setUploadProgress(null); }
+            if (err.response?.data?.errors) {
+                setErrors(err.response.data.errors);
+                showToast("Please fix the errors in the form.", "error");
+            } else {
+                showToast(
+                    err.response?.data?.message ||
+                        "Failed to update post. Please try again.",
+                    "error"
+                );
+            }
+        } finally {
+            setLoading(false);
+            setUploadProgress(null);
+        }
     };
 
-    if (fetching) return <div className="text-center py-12 text-gray-400">Loading post...</div>;
-
-    const currentImage = imagePreview ?? existingImage;
+    if (fetching) return <div className="loading-spinner">Loading post...</div>;
 
     return (
-        <div className="max-w-2xl mx-auto px-4 py-6">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-4">
-                    ← Back
+        <div className="create-post-container">
+            <div className="create-post-card">
+                <button
+                    className="btn btn-sm btn-outline back-btn"
+                    onClick={() => router.back()}
+                    style={{ marginBottom: "1rem" }}
+                >
+                    <HiArrowLeft /> Back
                 </button>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">Edit Post</h1>
-                <p className="text-sm text-gray-500 mb-6">Update your post details</p>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className={LABEL_CLASS} htmlFor="title">Title</label>
-                        <input id="title" name="title" type="text" value={form.title} onChange={handleChange} required
+                <h2>Edit Post</h2>
+                <p className="subtitle">Update your post details</p>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="title">Title</label>
+                        <input
+                            id="title"
+                            name="title"
+                            type="text"
+                            value={form.title}
+                            onChange={handleChange}
                             placeholder="Brief title of your concern"
-                            className={`${INPUT_CLASS} ${errors.title ? 'border-red-400' : ''}`} />
-                        {errors.title && <p className="text-xs text-red-500 mt-1">{errors.title[0]}</p>}
+                            required
+                        />
+                        {errors.title && (
+                            <span className="form-error">
+                                {errors.title[0]}
+                            </span>
+                        )}
                     </div>
 
-                    <div>
-                        <label className={LABEL_CLASS} htmlFor="description">Description</label>
-                        <textarea id="description" name="description" rows={5} value={form.description} onChange={handleChange} required
+                    <div className="form-group">
+                        <label htmlFor="description">Description</label>
+                        <textarea
+                            id="description"
+                            name="description"
+                            rows={5}
+                            value={form.description}
+                            onChange={handleChange}
                             placeholder="Describe the issue in detail..."
-                            className={`${INPUT_CLASS} resize-none ${errors.description ? 'border-red-400' : ''}`} />
-                        {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description[0]}</p>}
+                            required
+                        />
+                        {errors.description && (
+                            <span className="form-error">
+                                {errors.description[0]}
+                            </span>
+                        )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className={LABEL_CLASS} htmlFor="purpose">Purpose / Category</label>
-                            <select id="purpose" name="purpose" value={form.purpose} onChange={handleChange} className={INPUT_CLASS}>
-                                <option value="complaint">📋 Complaint</option>
-                                <option value="problem">❗ Problem</option>
-                                <option value="emergency">🚨 Emergency</option>
-                                <option value="suggestion">💡 Suggestion</option>
-                                <option value="general">📢 General</option>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="purpose">Purpose / Category</label>
+                            <select
+                                id="purpose"
+                                name="purpose"
+                                value={form.purpose}
+                                onChange={handleChange}
+                            >
+                                <option value="complaint">Complaint</option>
+                                <option value="problem">Problem</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="suggestion">Suggestion</option>
+                                <option value="general">General</option>
                             </select>
                         </div>
-                        <div>
-                            <label className={LABEL_CLASS} htmlFor="urgency_level">Urgency Level</label>
-                            <select id="urgency_level" name="urgency_level" value={form.urgency_level} onChange={handleChange} className={INPUT_CLASS}>
-                                <option value="low">🟢 Low</option>
-                                <option value="medium">🟡 Medium</option>
-                                <option value="high">🔴 High – Urgent</option>
+                        <div className="form-group">
+                            <label htmlFor="urgency_level">Urgency Level</label>
+                            <select
+                                id="urgency_level"
+                                name="urgency_level"
+                                value={form.urgency_level}
+                                onChange={handleChange}
+                            >
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High - Urgent</option>
                             </select>
                         </div>
                     </div>
 
-                    {form.urgency_level === 'high' && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 flex items-center gap-2">
-                            🚨 This will be flagged as an urgent post.
+                    {form.urgency_level === "high" && (
+                        <div className="alert alert-warning">
+                            <HiExclamation /> This will be flagged as an urgent
+                            post.
                         </div>
                     )}
 
-                    <div>
-                        <label className={LABEL_CLASS}>📷 Attach Image <span className="text-gray-400 font-normal">(optional)</span></label>
-                        {currentImage ? (
-                            <div className="relative rounded-xl overflow-hidden border border-gray-200">
-                                <img src={currentImage} alt="Preview" className="w-full max-h-64 object-cover" />
-                                <button type="button" onClick={handleRemoveImage}
-                                    className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5 hover:bg-black/80 transition-colors">
-                                    ✕
+                    <div className="form-group">
+                        <label htmlFor="image">
+                            <HiPhotograph /> Attach Image (optional)
+                        </label>
+                        <div className="file-upload-area">
+                            <input
+                                id="image"
+                                type="file"
+                                accept="image/jpeg,image/png,image/jpg,image/gif"
+                                onChange={handleImageChange}
+                                className="file-input-hidden"
+                            />
+                            {!imagePreview && !existingImage && (
+                                <label
+                                    htmlFor="image"
+                                    className="file-upload-label"
+                                >
+                                    <HiCloudUpload />
+                                    <span>
+                                        Click to upload or drag an image
+                                    </span>
+                                    <small>JPEG, PNG, GIF up to 5MB</small>
+                                </label>
+                            )}
+                        </div>
+                        {(imagePreview || existingImage) && (
+                            <div className="image-preview">
+                                <img
+                                    src={imagePreview || existingImage || ''}
+                                    alt="Preview"
+                                />
+                                <button
+                                    type="button"
+                                    className="image-preview-remove"
+                                    onClick={handleRemoveImage}
+                                >
+                                    <HiX /> Remove
                                 </button>
                             </div>
-                        ) : (
-                            <label htmlFor="image"
-                                className="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-xl p-8 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
-                                <span className="text-2xl mb-2">☁️</span>
-                                <span className="text-sm font-medium text-gray-600">Click to upload a new image</span>
-                                <span className="text-xs text-gray-400 mt-1">JPEG, PNG, GIF up to 5MB</span>
-                            </label>
                         )}
-                        <input id="image" type="file" accept="image/jpeg,image/png,image/jpg,image/gif"
-                            onChange={handleImageChange} className="hidden" />
                     </div>
 
                     <UploadProgress progress={uploadProgress} />
 
-                    <div className="flex gap-3 pt-2">
-                        <button type="button" onClick={() => router.back()}
-                            className="flex-1 py-3 border border-gray-200 text-gray-600 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                    <div className="form-actions">
+                        <button
+                            type="button"
+                            className="btn btn-outline"
+                            onClick={() => router.back()}
+                        >
                             Cancel
                         </button>
-                        <button type="submit" disabled={loading}
-                            className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-60">
-                            {loading ? 'Updating...' : 'Update Post'}
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading}
+                        >
+                            {loading ? "Updating..." : "Update Post"}
                         </button>
                     </div>
                 </form>

@@ -47,7 +47,7 @@ export default function DeviceVerification() {
                     <h1 className="text-2xl font-bold text-gray-900">New device detected</h1>
                     <p className="text-gray-500 mt-1">
                         Check your email for a 6-digit code sent to{' '}
-                        <strong>{pendingDeviceAuth.supabaseUser.email}</strong>
+                        <strong>{pendingDeviceAuth.data.user.email}</strong>
                     </p>
                 </div>
 

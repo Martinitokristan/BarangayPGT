@@ -1,48 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import api from '@/lib/api';
-import { useToast } from '@/contexts/ToastContext';
+import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import api from "@/lib/api";
+import { useToast } from "@/contexts/ToastContext";
+import { RiShieldStarFill, RiSearchLine, RiFilter3Fill } from "react-icons/ri";
+import { HiChevronLeft, HiChevronRight, HiEye, HiBadgeCheck, HiClock, HiUser, HiTag } from "react-icons/hi";
 
-interface Post {
-    id: number; title: string; purpose: string; urgency_level: string;
-    status: string; created_at: string; user: { name: string };
-}
-
-const SELECT = 'border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500';
-const STATUS_COLORS: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    resolved: 'bg-green-100 text-green-700',
-};
-const URGENCY_COLORS: Record<string, string> = {
-    high: 'bg-red-100 text-red-700',
-    medium: 'bg-amber-100 text-amber-700',
-    low: 'bg-green-100 text-green-700',
-};
-
-export default function AdminPostsPage() {
+export default function AdminPosts() {
     const { showToast } = useToast();
-    const [posts, setPosts] = useState<Post[]>([]);
+    const [posts, setPosts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filters, setFilters] = useState({
+        urgency_level: "",
+        status: "",
+        purpose: "",
+        search: "",
+    });
     const [page, setPage] = useState(1);
     const [lastPage, setLastPage] = useState(1);
-    const [filters, setFilters] = useState({ urgency_level: '', status: '', purpose: '', search: '' });
 
     const fetchPosts = useCallback(async () => {
         setLoading(true);
         try {
             const params: Record<string, string | number> = { page };
-            Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });
-            const res = await api.get('/posts', { params });
+            Object.entries(filters).forEach(([key, val]) => {
+                if (val) params[key] = val;
+            });
+            const res = await api.get("/posts", { params });
             setPosts(res.data.data);
             setLastPage(res.data.last_page);
-        } catch { showToast('Failed to load posts.', 'error'); }
-        finally { setLoading(false); }
-    }, [page, filters, showToast]);
+        } catch (e) {
+            showToast("Failed to load posts.", "error");
+        } finally {
+            setLoading(false);
+        }
+    }, [page, filters]);
 
-    useEffect(() => { fetchPosts(); }, [fetchPosts]);
+    useEffect(() => {
+        fetchPosts();
+    }, [fetchPosts]);
 
     const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -52,33 +49,57 @@ export default function AdminPostsPage() {
     const handleStatusChange = async (postId: number, status: string) => {
         try {
             await api.put(`/posts/${postId}`, { status });
-            setPosts(posts.map((p) => p.id === postId ? { ...p, status } : p));
-            showToast('Status updated!', 'success');
-        } catch { showToast('Failed to update status.', 'error'); }
+            setPosts(posts.map(p => p.id === postId ? { ...p, status } : p));
+            showToast("Status updated!", "success");
+        } catch (e) {
+            showToast("Failed to update status.", "error");
+        }
     };
 
     return (
-        <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">🛡️ Manage Posts</h1>
+        <div className="admin-posts">
+            <div className="dashboard-header">
+                <h2>
+                    <RiShieldStarFill /> Manage Posts
+                </h2>
+            </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3 mb-6">
-                <input type="text" name="search" value={filters.search} onChange={handleFilterChange}
-                    placeholder="Search posts..."
-                    className="border border-gray-200 rounded-xl px-4 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[200px]" />
-                <select name="urgency_level" value={filters.urgency_level} onChange={handleFilterChange} className={SELECT}>
+            <div className="feed-filters">
+                <div className="search-box" style={{ position: 'relative' }}>
+                    <input
+                        type="text"
+                        name="search"
+                        placeholder="Search title or content..."
+                        value={filters.search}
+                        onChange={handleFilterChange}
+                        className="search-input"
+                    />
+                </div>
+                <select
+                    name="urgency_level"
+                    value={filters.urgency_level}
+                    onChange={handleFilterChange}
+                >
                     <option value="">All Urgency</option>
-                    <option value="high">🔴 High</option>
-                    <option value="medium">🟡 Medium</option>
-                    <option value="low">🟢 Low</option>
+                    <option value="high">High Urgency</option>
+                    <option value="medium">Medium Urgency</option>
+                    <option value="low">Low Urgency</option>
                 </select>
-                <select name="status" value={filters.status} onChange={handleFilterChange} className={SELECT}>
+                <select
+                    name="status"
+                    value={filters.status}
+                    onChange={handleFilterChange}
+                >
                     <option value="">All Status</option>
                     <option value="pending">Pending</option>
                     <option value="in_progress">In Progress</option>
                     <option value="resolved">Resolved</option>
                 </select>
-                <select name="purpose" value={filters.purpose} onChange={handleFilterChange} className={SELECT}>
+                <select
+                    name="purpose"
+                    value={filters.purpose}
+                    onChange={handleFilterChange}
+                >
                     <option value="">All Types</option>
                     <option value="complaint">Complaint</option>
                     <option value="problem">Problem</option>
@@ -89,46 +110,115 @@ export default function AdminPostsPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-gray-400 text-sm">Loading posts...</div>
-            ) : posts.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-gray-400 text-sm">
-                    No posts found matching your filters.
+                <div className="text-center py-5">
+                    <div className="spinner-border text-primary"></div>
+                    <p className="mt-2 text-muted">Loading posts...</p>
                 </div>
             ) : (
                 <>
-                    {/* Posts list */}
-                    <div className="space-y-3">
+                    {/* Desktop View: Table */}
+                    <div className="admin-table-wrapper">
+                        <table className="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Post Info</th>
+                                    <th>Author</th>
+                                    <th>Details</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {posts.map((post) => (
+                                    <tr
+                                        key={post.id}
+                                        className={post.urgency_level === "high" ? "row-urgent" : ""}
+                                    >
+                                        <td>
+                                            <div style={{ fontWeight: '700' }}>
+                                                <Link href={`/posts/${post.id}`}>{post.title}</Link>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                                ID: {post.id} • {new Date(post.created_at).toLocaleDateString()}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div className="avatar-xs" style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                                                    {post.user?.name?.charAt(0)}
+                                                </div>
+                                                {post.user?.name}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                <span className={`badge-urgency urgency-${post.urgency_level}`}>
+                                                    {post.urgency_level.toUpperCase()}
+                                                </span>
+                                                <span className="text-muted" style={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>
+                                                    {post.purpose}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <select
+                                                value={post.status}
+                                                onChange={(e) => handleStatusChange(post.id, e.target.value)}
+                                                className={`status-select status-${post.status}`}
+                                            >
+                                                <option value="pending">Pending</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="resolved">Resolved</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <Link href={`/posts/${post.id}`} className="btn btn-sm btn-outline-primary">
+                                                <HiEye /> View
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Mobile View: Cards */}
+                    <div className="mobile-posts-grid">
                         {posts.map((post) => (
-                            <div key={post.id}
-                                className={`bg-white rounded-2xl shadow-sm border p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${post.urgency_level === 'high' ? 'border-red-200' : 'border-gray-100'}`}>
-                                {/* Info */}
-                                <div className="flex-1 min-w-0">
-                                    <Link href={`/posts/${post.id}`} className="font-semibold text-gray-900 hover:text-blue-600 text-sm">
-                                        {post.title}
-                                    </Link>
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${URGENCY_COLORS[post.urgency_level] ?? ''}`}>
-                                            {post.urgency_level.toUpperCase()}
-                                        </span>
-                                        <span className="text-xs text-gray-400 capitalize">{post.purpose}</span>
-                                        <span className="text-xs text-gray-400">by {post.user?.name}</span>
-                                        <span className="text-xs text-gray-300">#{post.id} · {new Date(post.created_at).toLocaleDateString()}</span>
+                            <div key={post.id} className="post-admin-card">
+                                <div className="card-header-row">
+                                    <div className="post-id-date">
+                                        <span className="p-id">#{post.id}</span>
+                                        <span className="p-date">{new Date(post.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <span className={`badge-urgency urgency-${post.urgency_level}`}>
+                                        {post.urgency_level.toUpperCase()}
+                                    </span>
+                                </div>
+                                <h4 className="card-title">
+                                    <Link href={`/posts/${post.id}`}>{post.title}</Link>
+                                </h4>
+                                <div className="card-meta-grid">
+                                    <div className="meta-item">
+                                        <label><HiUser size={12}/> AUTHOR</label>
+                                        <span title={post.user?.name}>{post.user?.name}</span>
+                                    </div>
+                                    <div className="meta-item">
+                                        <label><HiTag size={12}/> TYPE</label>
+                                        <span style={{ textTransform: 'capitalize' }}>{post.purpose}</span>
                                     </div>
                                 </div>
-
-                                {/* Status select */}
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="card-actions-row">
                                     <select
                                         value={post.status}
                                         onChange={(e) => handleStatusChange(post.id, e.target.value)}
-                                        className={`text-xs border rounded-xl px-3 py-2 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${STATUS_COLORS[post.status] ?? 'bg-gray-100 text-gray-700'}`}
+                                        className={`status-select status-${post.status}`}
                                     >
                                         <option value="pending">Pending</option>
                                         <option value="in_progress">In Progress</option>
                                         <option value="resolved">Resolved</option>
                                     </select>
-                                    <Link href={`/posts/${post.id}`}
-                                        className="text-xs text-blue-600 border border-blue-200 px-3 py-2 rounded-xl hover:bg-blue-50 transition-colors">
+                                    <Link href={`/posts/${post.id}`} className="btn btn-primary btn-view">
                                         View
                                     </Link>
                                 </div>
@@ -136,17 +226,31 @@ export default function AdminPostsPage() {
                         ))}
                     </div>
 
-                    {/* Pagination */}
+                    {posts.length === 0 && (
+                        <div className="empty-state py-5 text-center">
+                            <RiSearchLine size={48} className="text-muted mb-3 opacity-25" />
+                            <p className="text-muted">No posts found matching your filters.</p>
+                        </div>
+                    )}
+
                     {lastPage > 1 && (
-                        <div className="flex items-center justify-center gap-3 mt-6">
-                            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)}
-                                className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">
-                                ← Prev
+                        <div className="pagination mt-4">
+                            <button
+                                className="btn btn-outline-secondary"
+                                disabled={page <= 1}
+                                onClick={() => setPage((p) => p - 1)}
+                            >
+                                <HiChevronLeft /> Prev
                             </button>
-                            <span className="text-sm text-gray-500">{page} / {lastPage}</span>
-                            <button disabled={page >= lastPage} onClick={() => setPage((p) => p + 1)}
-                                className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">
-                                Next →
+                            <span className="mx-3 align-self-center">
+                                {page} / {lastPage}
+                            </span>
+                            <button
+                                className="btn btn-outline-secondary"
+                                disabled={page >= lastPage}
+                                onClick={() => setPage((p) => p + 1)}
+                            >
+                                Next <HiChevronRight />
                             </button>
                         </div>
                     )}

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import api from '@/lib/api';
+import api, { setAuthToken } from '@/lib/api';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -28,8 +28,7 @@ export interface LocalUser {
 }
 
 interface PendingDeviceAuth {
-    supabaseUser: SupabaseUser;
-    session: Session;
+    data: any;
 }
 
 interface AuthContextType {
@@ -39,11 +38,18 @@ interface AuthContextType {
     isAdmin: boolean;
     pendingDeviceAuth: PendingDeviceAuth | null;
     deviceTrusted: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<{ device_trusted: boolean }>;
     logout: () => Promise<void>;
     updateProfile: (updated: Partial<LocalUser>) => void;
     verifyDeviceCode: (code: string) => Promise<void>;
     resendDeviceCode: () => Promise<void>;
+    fetchUser: () => Promise<LocalUser | null>;
+    forgotPassword: (method: 'email' | 'phone', identifier: string) => Promise<void>;
+    resetPasswordOtp: (phone: string, token: string, password: string, password_confirmation: string) => Promise<void>;
+    resetPassword: (token: string, email: string, password: string, password_confirmation: string) => Promise<void>;
+    verifyAndLogin: (userObj: LocalUser, tokenHash: string) => void;
+    pollRegistrationStatus: (email: string) => Promise<any>;
+    resendRegistrationOtp: (email: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -70,81 +76,67 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Fetch the local Laravel user record using the current Supabase session
-    const fetchLocalUser = useCallback(async (): Promise<LocalUser | null> => {
+    // Optionally pass a token directly (needed during onAuthStateChange race condition)
+    const fetchLocalUser = useCallback(async (token?: string): Promise<LocalUser | null> => {
         try {
-            const res = await api.get('/user');
+            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+            const res = await api.get('/user', config);
+            setUser(res.data);
             return res.data;
         } catch {
             return null;
         }
     }, []);
 
-    // On mount: restore session from Supabase
+    // On mount: restore session from our custom tokens (localStorage)
     useEffect(() => {
-        supabase.auth.getSession().then(async ({ data }) => {
-            const currentSession = data.session;
-            setSession(currentSession);
-
-            if (currentSession) {
-                const localUser = await fetchLocalUser();
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (storedToken) {
+            setAuthToken(storedToken);
+            fetchLocalUser(storedToken).then((localUser) => {
                 setUser(localUser);
-            }
-
+                setLoading(false);
+            }).catch(() => {
+                setAuthToken(null);
+                setLoading(false);
+            });
+        } else {
             setLoading(false);
-        });
+        }
+    }, [fetchLocalUser]);
 
-        // Listen for auth state changes (sign in, sign out, token refresh)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, newSession) => {
-                setSession(newSession);
-                if (newSession) {
-                    const localUser = await fetchLocalUser();
-                    setUser(localUser);
-                } else {
-                    setUser(null);
-                    setPendingDeviceAuth(null);
-                }
-            }
-        );
-
-        return () => subscription.unsubscribe();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Login: sign in with Supabase, then check device trust
+    // Login: sign in via Laravel Custom API, then check device trust
     const login = async (email: string, password: string) => {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-
-        const supabaseUser = data.user;
-        const sess = data.session;
-
-        // Check if this device is trusted (residents only)
-        const localUser = await fetchLocalUser();
-
-        if (localUser && localUser.role === 'resident') {
-            const deviceToken = getDeviceToken();
-            const trusted = localUser && (await api.post('/device/check', { device_token: deviceToken }).catch(() => ({ data: { trusted: false } }))).data.trusted;
-
-            if (!trusted) {
-                // Device not trusted — send OTP, hold in pending state
-                setPendingDeviceAuth({ supabaseUser, session: sess });
-                await api.post('/device/resend-code');
-                return;
-            }
+        const deviceToken = getDeviceToken();
+        const res = await api.post('/login', { email, password, device_token: deviceToken });
+        
+        const data = res.data;
+        
+        if (!data.device_trusted) {
+            // Device not trusted — send OTP, hold in pending state (do not apply token fully yet)
+            setPendingDeviceAuth({ data });
+            return { device_trusted: false };
         }
 
-        setUser(localUser);
+        // Apply full login
+        setAuthToken(data.token);
+        setUser(data.user);
         setDeviceTrusted(true);
+        return { device_trusted: true };
     };
 
     // Verify the device OTP code
     const verifyDeviceCode = async (code: string) => {
         if (!pendingDeviceAuth) throw new Error('No pending auth');
+        
+        const attemptData = pendingDeviceAuth.data;
+        // Temporary set auth token to allow device/verify to proceed securely
+        setAuthToken(attemptData.token);
+        
         const deviceToken = getDeviceToken();
-
         await api.post('/device/verify', { code, device_token: deviceToken });
 
+        // Proceed with full login
         const localUser = await fetchLocalUser();
         setUser(localUser);
         setDeviceTrusted(true);
@@ -153,18 +145,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Resend OTP code to email
     const resendDeviceCode = async () => {
+        if (!pendingDeviceAuth) return;
+        // Tempoarily set token
+        const oldToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        setAuthToken(pendingDeviceAuth.data.token);
         await api.post('/device/resend-code');
+        setAuthToken(oldToken);
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
+        await api.post('/logout').catch(() => {});
+        setAuthToken(null);
         setUser(null);
-        setSession(null);
         setPendingDeviceAuth(null);
     };
 
     const updateProfile = (updated: Partial<LocalUser>) => {
         setUser((prev) => (prev ? { ...prev, ...updated } : null));
+    };
+
+    const forgotPassword = async (method: 'email' | 'phone', identifier: string) => {
+        await api.post('/forgot-password', { method, identifier });
+    };
+
+    const resetPasswordOtp = async (phone: string, token: string, password: string, password_confirmation: string) => {
+        await api.post('/reset-password/otp', { phone, token, password, password_confirmation });
+    };
+
+    const resetPassword = async (token: string, email: string, password: string, password_confirmation: string) => {
+        await api.post('/reset-password', { token, email, password, password_confirmation });
+    };
+
+    const verifyAndLogin = (userObj: LocalUser, tokenHash: string) => {
+        setAuthToken(tokenHash);
+        setUser(userObj);
+    };
+
+    const pollRegistrationStatus = async (email: string) => {
+        const res = await api.get(`/auth/check-status?email=${encodeURIComponent(email)}`);
+        return res.data;
+    };
+
+    const resendRegistrationOtp = async (email: string) => {
+        const res = await api.post('/auth/register/resend-otp', { email });
+        return res.data;
     };
 
     return (
@@ -181,6 +205,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 updateProfile,
                 verifyDeviceCode,
                 resendDeviceCode,
+                fetchUser: fetchLocalUser,
+                forgotPassword,
+                resetPasswordOtp,
+                resetPassword,
+                verifyAndLogin,
+                pollRegistrationStatus,
+                resendRegistrationOtp,
             }}
         >
             {children}

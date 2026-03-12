@@ -1,0 +1,104 @@
+// ==========================================================
+// Toast Notifications
+// ==========================================================
+@import "../base/variables";
+
+.toast-container {
+    position: fixed;
+    top: $navbar-height + 16px;
+    right: $space-4;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
+    max-width: 420px;
+    width: calc(100% - 2rem);
+    pointer-events: none;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-4 $space-5;
+    border-radius: $radius-md;
+    background: $bg-white;
+    box-shadow: $shadow-lg;
+    border-left: 4px solid $primary;
+    pointer-events: all;
+    animation: toastSlideIn 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+    backdrop-filter: blur(8px);
+
+    &.toast-success {
+        border-left-color: $success;
+        .toast-icon {
+            color: $success;
+        }
+    }
+
+    &.toast-error {
+        border-left-color: $danger;
+        background: lighten($danger-light, 2%);
+        .toast-icon {
+            color: $danger;
+        }
+    }
+
+    &.toast-warning {
+        border-left-color: $warning;
+        .toast-icon {
+            color: $warning;
+        }
+    }
+
+    &.toast-info {
+        border-left-color: $info;
+        .toast-icon {
+            color: $info;
+        }
+    }
+}
+
+.toast-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $text-primary;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: $text-muted;
+    cursor: pointer;
+    padding: $space-1;
+    display: flex;
+    align-items: center;
+    border-radius: $radius-sm;
+    transition: all $transition-fast;
+    flex-shrink: 0;
+
+    &:hover {
+        color: $text-primary;
+        background: rgba(0, 0, 0, 0.05);
+    }
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

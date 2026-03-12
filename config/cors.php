@@ -28,9 +28,7 @@ return [
     | In production, set CORS_ALLOWED_ORIGINS=https://yourdomain.com
     |
     */
-    'allowed_origins' => array_filter(
-        array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost,http://127.0.0.1,http://localhost:3000,http://localhost:8000')))
-    ),
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 

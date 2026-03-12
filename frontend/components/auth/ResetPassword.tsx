@@ -19,7 +19,7 @@ function ResetPasswordForm() {
 
     // Supabase sends the reset token in the URL hash — exchange it for a session
     useEffect(() => {
-        supabase.auth.onAuthStateChange((event) => {
+        supabase.auth.onAuthStateChange((event: any) => {
             if (event === 'PASSWORD_RECOVERY') {
                 setReady(true);
             }

@@ -35,16 +35,20 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
+    // Use ref to avoid re-creating callbacks when user changes
+    const userRef = React.useRef(user);
+    userRef.current = user;
+
     const fetchUnreadCount = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const res = await api.get('/notifications/unread-count');
             setUnreadCount(res.data.count);
         } catch { /* silent */ }
-    }, [user]);
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) return;
         try {
             const res = await api.get('/notifications');
             setNotifications(res.data.data);
@@ -53,7 +57,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         } catch { /* silent */ } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, []);
 
     const markAsRead = useCallback(async (id: number) => {
         await api.put(`/notifications/${id}/read`);

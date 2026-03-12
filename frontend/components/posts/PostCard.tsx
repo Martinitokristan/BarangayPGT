@@ -1,331 +1,357 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { createPortal } from 'react-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/contexts/ToastContext';
-import api from '@/lib/api';
-import ConfirmModal from '@/components/ui/ConfirmModal';
-import CommentModal from './CommentModal';
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import Link from "next/link";
+import { formatDistanceToNow, format } from 'date-fns';
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/contexts/ToastContext";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import api, { getStorageUrl } from "@/lib/api";
+import {
+    HiExclamation,
+    HiChat,
+    HiLink,
+    HiClipboardList,
+    HiLightBulb,
+    HiSpeakerphone,
+    HiDotsVertical,
+    HiPencil,
+    HiTrash,
+    HiX,
+    HiOutlineThumbUp,
+    HiExternalLink
+} from "react-icons/hi";
+import { RiAlarmWarningFill, RiShieldStarFill } from "react-icons/ri";
+import {
+    FaFacebookF,
+    FaFacebookMessenger,
+    FaWhatsapp,
+    FaTwitter,
+    FaShare,
+} from "react-icons/fa";
+import CommentModal from "./CommentModal";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface PostUser {
-    id: number;
-    name: string;
-    avatar: string | null;
-    barangay?: { name: string };
-}
-
-export interface PostData {
-    id: number;
-    title?: string;
-    body?: string;
-    description?: string;
-    image?: string | null;
-    type?: string;
-    purpose?: string;
-    urgency_level?: string;
-    status?: string;
-    admin_response?: string | null;
-    user_id: number;
-    user: PostUser;
-    reactions?: Array<{ user_id: number; type: string }>;
-    reaction_counts?: Record<string, number>;
-    user_reaction?: string | null;
-    comments?: CommentData[];
-    comments_count?: number;
-    created_at: string;
-}
-
-export interface CommentData {
-    id: number;
-    body: string;
-    user_id: number;
-    user: { id: number; name: string; avatar: string | null };
-    liked_by?: number[];
-    replies?: CommentData[];
-    created_at: string;
-}
-
-interface PostCardProps {
-    post: PostData;
-    onUpdate?: (postId: number, updated: PostData) => void;
-    onDelete?: (postId: number) => void;
-}
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const REACTION_CONFIG: Record<string, { emoji: string; label: string; color: string }> = {
-    Like: { emoji: '👍', label: 'Like', color: '#3b5998' },
-    heart: { emoji: '❤️', label: 'Heart', color: '#e74c3c' },
-    support: { emoji: '🤝', label: 'Support', color: '#27ae60' },
-    sad: { emoji: '😢', label: 'Sad', color: '#3498db' },
+const REACTION_CONFIG: Record<string, any> = {
+    Like: { emoji: "👍", label: "Like", color: "#3b5998", isGif: false },
+    heart: { emoji: "❤️", label: "Heart", color: "#e74c3c", isGif: false },
+    support: { emoji: "🤝", label: "Support", color: "#27ae60", isGif: false },
+    sad: { emoji: "😢", label: "Sad", color: "#3498db", isGif: false },
 };
 
-const PURPOSE_LABELS: Record<string, { icon: string; text: string }> = {
-    complaint: { icon: '📋', text: 'Complaint' },
-    problem: { icon: '❗', text: 'Problem' },
-    emergency: { icon: '🚨', text: 'Emergency' },
-    suggestion: { icon: '💡', text: 'Suggestion' },
-    general: { icon: '📢', text: 'General' },
+const URGENCY_STYLES: Record<string, any> = {
+    high: { label: "HIGH", className: "urgency-high" },
+    medium: { label: "MEDIUM", className: "urgency-medium" },
+    low: { label: "LOW", className: "urgency-low" },
 };
 
-const STATUS_LABELS: Record<string, { text: string; classes: string }> = {
-    pending: { text: 'Pending', classes: 'bg-amber-100 text-amber-700' },
-    in_progress: { text: 'In Progress', classes: 'bg-blue-100 text-blue-700' },
-    resolved: { text: 'Resolved', classes: 'bg-green-100 text-green-700' },
+const PURPOSE_LABELS: Record<string, any> = {
+    complaint: { icon: <HiClipboardList />, text: "Complaint" },
+    problem: { icon: <HiExclamation />, text: "Problem" },
+    emergency: { icon: <RiAlarmWarningFill />, text: "Emergency" },
+    suggestion: { icon: <HiLightBulb />, text: "Suggestion" },
+    general: { icon: <HiSpeakerphone />, text: "General" },
 };
 
-const URGENCY_STYLES: Record<string, { label: string; classes: string }> = {
-    high: { label: 'HIGH', classes: 'bg-red-100 text-red-700' },
-    medium: { label: 'MEDIUM', classes: 'bg-amber-100 text-amber-700' },
-    low: { label: 'LOW', classes: 'bg-green-100 text-green-700' },
+const STATUS_LABELS: Record<string, string> = {
+    pending: "Pending",
+    in_progress: "In Progress",
+    resolved: "Resolved",
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function getInitialReactions(post: PostData): Record<string, number> {
-    if (post.reaction_counts) return post.reaction_counts;
-    const counts: Record<string, number> = {};
-    (post.reactions || []).forEach((r) => {
-        counts[r.type] = (counts[r.type] || 0) + 1;
-    });
-    return counts;
-}
-
-function getUserInitialReaction(post: PostData, userId: number): string | null {
-    if (post.user_reaction !== undefined) return post.user_reaction;
-    const r = (post.reactions || []).find((r) => r.user_id === userId);
-    return r ? r.type : null;
-}
-
-// ─── PostCard ─────────────────────────────────────────────────────────────────
-
-export default function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
+export default function PostCard({ post, onUpdate, onDelete }: any) {
     const { user } = useAuth();
     const { showToast } = useToast();
     const router = useRouter();
-
-    const [reactions, setReactions] = useState(() => getInitialReactions(post));
-    const [userReaction, setUserReaction] = useState<string | null>(() => getUserInitialReaction(post, user?.id ?? 0));
+    const [reactions, setReactions] = useState<any>(getInitialReactions(post));
+    const [userReaction, setUserReaction] = useState<string | null>(getUserReaction(post));
     const [showPostMenu, setShowPostMenu] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [showReactionPicker, setShowPicker] = useState(false);
+    const [showReactionPicker, setShowReactionPicker] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
-    const [hoveredReaction, setHovered] = useState<string | null>(null);
-    const [showCommentModal, setShowComment] = useState(false);
-    const [showImageViewer, setShowImage] = useState(false);
+    const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    const [showImageViewer, setShowImageViewer] = useState(false);
 
     const menuRef = useRef<HTMLDivElement>(null);
     const pickerRef = useRef<HTMLDivElement>(null);
     const shareRef = useRef<HTMLDivElement>(null);
-    const pressTimerRef = useRef<ReturnType<typeof setTimeout> | 'long-press' | null>(null);
-    const shareTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pressTimer = useRef<any>(null);
+    const hoverTimeoutRef = useRef<any>(null);
+    const shareTimeout = useRef<any>(null);
 
-    // ─── Outside click / touch gestures ────────────────────────────────────────
+    function getInitialReactions(p: any) {
+        if (p.reaction_counts) return p.reaction_counts;
+        const counts: any = {};
+        if (p.reactions) {
+            p.reactions.forEach((r: any) => {
+                counts[r.type] = (counts[r.type] || 0) + 1;
+            });
+        }
+        return counts;
+    }
+
+    function getUserReaction(p: any) {
+        if (p.user_reaction !== undefined) return p.user_reaction;
+        if (p.reactions && user) {
+            const r = p.reactions.find((r: any) => r.user_id === user.id);
+            return r ? r.type : null;
+        }
+        return null;
+    }
+
+    // Use refs so the effect doesn't re-register listeners on every hover change
+    const hoveredReactionRef = useRef<string | null>(null);
+    hoveredReactionRef.current = hoveredReaction;
+    const handleReactRef = useRef<(type: string) => void>(() => {});
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowPostMenu(false);
-            if (shareRef.current && !shareRef.current.contains(e.target as Node)) setShowShareMenu(false);
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setShowPostMenu(false);
+            }
+            if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+                setShowShareMenu(false);
+            }
             if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-                setShowPicker(false);
-                setHovered(null);
+                setShowReactionPicker(false);
+                setHoveredReaction(null);
             }
         };
-        const handleTouchMove = (e: TouchEvent) => {
+
+        const handleGlobalTouchMove = (e: TouchEvent) => {
             if (!showReactionPicker) return;
             if (e.cancelable) e.preventDefault();
-            const el = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-            const item = el?.closest('[data-reaction-type]') as HTMLElement | null;
-            setHovered(item ? item.dataset.reactionType ?? null : null);
+            const touch = e.touches[0];
+            const element = document.elementFromPoint(
+                touch.clientX,
+                touch.clientY,
+            );
+            const reactionItem = element?.closest(".reaction-picker-item");
+            if (reactionItem) {
+                const type = reactionItem.getAttribute("data-type");
+                setHoveredReaction(type);
+            } else {
+                setHoveredReaction(null);
+            }
         };
-        const handleTouchEnd = () => {
+
+        const handleGlobalTouchEnd = (e: TouchEvent) => {
             if (!showReactionPicker) return;
-            if (hoveredReaction) handleReact(hoveredReaction);
-            setShowPicker(false);
-            setHovered(null);
+            if (hoveredReactionRef.current) {
+                handleReactRef.current(hoveredReactionRef.current);
+            }
+            setShowReactionPicker(false);
+            setHoveredReaction(null);
+            pressTimer.current = null;
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
+
         if (showReactionPicker) {
-            window.addEventListener('touchmove', handleTouchMove, { passive: false });
-            window.addEventListener('touchend', handleTouchEnd);
+            window.addEventListener("touchmove", handleGlobalTouchMove, {
+                passive: false,
+            });
+            window.addEventListener("touchend", handleGlobalTouchEnd);
         }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            window.removeEventListener('touchmove', handleTouchMove);
-            window.removeEventListener('touchend', handleTouchEnd);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showReactionPicker, hoveredReaction]);
 
-    // ─── Reaction handlers ──────────────────────────────────────────────────────
-    const handleReact = useCallback(async (type: string) => {
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener("touchmove", handleGlobalTouchMove);
+            window.removeEventListener("touchend", handleGlobalTouchEnd);
+        };
+    }, [showReactionPicker]);
+
+    const handleReact = async (type: string) => {
         try {
             const res = await api.post(`/posts/${post.id}/reactions`, { type });
-            setReactions(res.data.reaction_counts ?? res.data.reactions ?? {});
+            setReactions(res.data.reaction_counts || res.data.reactions);
             setUserReaction(res.data.user_reaction);
-            if (onUpdate) onUpdate(post.id, { ...post, reaction_counts: res.data.reaction_counts, user_reaction: res.data.user_reaction });
-        } catch { showToast('Failed to react.', 'error'); }
-        setShowPicker(false);
-    }, [post, onUpdate, showToast]);
+            if (onUpdate) {
+                onUpdate(post.id, {
+                    ...post,
+                    reaction_counts: res.data.reaction_counts,
+                    user_reaction: res.data.user_reaction
+                });
+            }
+        } catch (e) {
+            showToast("Failed to react. Please try again.", "error");
+        }
+        setShowReactionPicker(false);
+    };
+    handleReactRef.current = handleReact;
 
-    const handleLikeClick = useCallback(async () => {
-        if (pressTimerRef.current === 'long-press') return;
-        const type = userReaction ?? 'Like';
-        await handleReact(type);
-    }, [userReaction, handleReact]);
+    const handleLikeClick = async () => {
+        if (pressTimer.current === "long-press-triggered") return;
+        const type = userReaction ? userReaction : "Like";
+        handleReact(type);
+    };
 
-    const handlePressStart = () => {
-        pressTimerRef.current = setTimeout(() => {
-            setShowPicker(true);
-            setHovered('Like');
-            pressTimerRef.current = 'long-press';
+    const handlePressStart = (e: React.TouchEvent) => {
+        pressTimer.current = setTimeout(() => {
+            setShowReactionPicker(true);
+            setHoveredReaction("Like");
+            pressTimer.current = "long-press-triggered";
         }, 500);
     };
 
-    const handlePressEnd = () => {
-        if (pressTimerRef.current && pressTimerRef.current !== 'long-press') {
-            clearTimeout(pressTimerRef.current as ReturnType<typeof setTimeout>);
-            handleLikeClick();
-            pressTimerRef.current = null;
+    const handlePressEnd = (e: React.TouchEvent) => {
+        if (pressTimer.current) {
+            if (pressTimer.current !== "long-press-triggered") {
+                clearTimeout(pressTimer.current);
+                handleLikeClick();
+                pressTimer.current = null;
+            }
         }
     };
 
-    const handleMouseEnterReaction = () => {
-        if (window.innerWidth < 768) return;
-        clearTimeout(hoverTimeoutRef.current!);
-        hoverTimeoutRef.current = setTimeout(() => setShowPicker(true), 500);
-    };
-
-    const handleMouseLeaveReaction = () => {
-        clearTimeout(hoverTimeoutRef.current!);
-        hoverTimeoutRef.current = setTimeout(() => { setShowPicker(false); setHovered(null); }, 100);
-    };
-
-    // ─── Delete ─────────────────────────────────────────────────────────────────
     const handleDelete = async () => {
         try {
             await api.delete(`/posts/${post.id}`);
-            showToast('Post deleted.', 'success');
+            showToast("Post deleted successfully.", "success");
             if (onDelete) onDelete(post.id);
-            else if (onUpdate) onUpdate(post.id, post);
-        } catch { showToast('Failed to delete post.', 'error'); }
+            else if (onUpdate) onUpdate(post.id);
+        } catch (e) {
+            showToast("Failed to delete post.", "error");
+        }
         setShowDeleteModal(false);
     };
 
-    // ─── Share ──────────────────────────────────────────────────────────────────
     const getPostUrl = () => `${window.location.origin}/posts/${post.id}`;
+
+    const handleSharePost = async () => {
+        try {
+            showToast("Post shared successfully to your profile!", "success");
+            setShowShareMenu(false);
+        } catch (e) {
+            showToast("Failed to share post.", "error");
+        }
+    };
 
     const handleShare = (platform: string) => {
         const url = encodeURIComponent(getPostUrl());
-        const title = post.title ?? post.body?.slice(0, 60) ?? 'Post';
-        const text = encodeURIComponent(`${title} - BarangayPGT`);
-        const urls: Record<string, string> = {
+        const text = encodeURIComponent(`${post.title} - Barangay Online Sumbongan`);
+        const shareUrls: Record<string, string> = {
             facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
             messenger: `https://www.facebook.com/dialog/send?link=${url}&app_id=0&redirect_uri=${url}`,
             twitter: `https://twitter.com/intent/tweet?url=${url}&text=${text}`,
             whatsapp: `https://wa.me/?text=${text}%20${url}`,
         };
-        if (platform === 'copy') {
+        if (platform === "copy") {
             navigator.clipboard.writeText(getPostUrl());
-            showToast('Link copied!', 'success');
-        } else if (platform === 'native' && navigator.share) {
-            navigator.share({ title, url: getPostUrl() }).catch(() => { });
-        } else if (urls[platform]) {
-            window.open(urls[platform], '_blank', 'width=600,height=400');
+            showToast("Link copied to clipboard!", "success");
+        } else if (platform === "native" && navigator.share) {
+            navigator.share({
+                title: post.title,
+                text: `${post.title} - Barangay Online Sumbongan`,
+                url: getPostUrl(),
+            }).catch(() => { });
+        } else if (shareUrls[platform]) {
+            window.open(shareUrls[platform], "_blank", "width=600,height=400");
         }
         setShowShareMenu(false);
     };
 
-    // ─── Derived values ─────────────────────────────────────────────────────────
+    const handleMouseEnter = () => {
+        if (window.innerWidth < 768) return;
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setShowReactionPicker(true);
+        }, 500);
+    };
+
+    const handleMouseLeave = () => {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = setTimeout(() => {
+            setShowReactionPicker(false);
+            setHoveredReaction(null);
+        }, 100);
+    };
+
+    const handleShareMouseEnter = () => {
+        clearTimeout(shareTimeout.current);
+        setShowShareMenu(true);
+    };
+
+    const handleShareMouseLeave = () => {
+        shareTimeout.current = setTimeout(() => setShowShareMenu(false), 300);
+    };
+
+    const isUrgent = post.urgency_level === "high" && post.status !== "resolved";
+    const urgencyInfo = URGENCY_STYLES[post.urgency_level];
+    const totalReactions = Object.values(reactions).reduce((a: any, b: any) => a + b, 0) as number;
     const isOwner = user?.id === post.user_id;
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === "admin";
     const canManage = isOwner || isAdmin;
-    const isUrgent = post.urgency_level === 'high' && post.status !== 'resolved';
-    const urgencyInfo = URGENCY_STYLES[post.urgency_level ?? ''];
-    const statusInfo = STATUS_LABELS[post.status ?? ''];
-    const purposeInfo = PURPOSE_LABELS[post.purpose ?? ''];
-    const totalReactions = Object.values(reactions).reduce((a, b) => a + b, 0);
-    const totalComments = post.comments_count ?? (post.comments ?? []).reduce(
-        (acc, c) => acc + 1 + (c.replies?.length ?? 0), 0
-    );
-    const currentReaction = userReaction ? REACTION_CONFIG[userReaction] : null;
+
+    const totalComments = post.comments_count !== undefined
+        ? post.comments_count
+        : (post.comments || []).reduce((acc: number, comment: any) => acc + 1 + (comment.replies?.length || 0), 0);
 
     return (
-        <div className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${isUrgent && isAdmin ? 'border-red-300' : 'border-gray-100'}`}>
-            {/* Urgent banner */}
+        <div className={`post-card ${isUrgent && isAdmin ? "post-urgent" : ""}`}>
             {isUrgent && isAdmin && (
-                <div className="animate-urgent-pulse bg-red-500 text-white text-xs font-bold px-4 py-1.5 flex items-center gap-1.5">
-                    🚨 URGENT POST
+                <div className="urgent-banner">
+                    <HiExclamation /> URGENT POST
                 </div>
             )}
 
-            {/* Header */}
-            <div className="flex items-start gap-3 p-4 pb-2">
-                <Link href={`/users/${post.user?.id}/profile`}>
-                    <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-semibold text-sm flex-shrink-0">
-                        {post.user?.avatar
-                            ? <img src={post.user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                            : post.user?.name?.charAt(0).toUpperCase()
-                        }
+            <div className="post-header">
+                <div className="post-author">
+                    <div className={`avatar ${isUrgent && isAdmin ? "avatar-urgent" : ""}`}>
+                        {post.user?.avatar ? (
+                            <img src={post.user.avatar} alt="User" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        ) : (
+                            post.user?.name?.charAt(0).toUpperCase()
+                        )}
                     </div>
-                </Link>
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <Link href={`/users/${post.user?.id}/profile`} className="font-semibold text-gray-900 text-sm hover:text-blue-600">
-                            {post.user?.name}
-                        </Link>
-                        {purposeInfo && (
-                            <span className="text-xs text-gray-500">
-                                · {purposeInfo.icon} {purposeInfo.text}
+                    <div>
+                        <strong>
+                            <Link href={`/users/${post.user?.id}/profile`} className="author-link">
+                                {post.user?.name}
+                            </Link>
+                            <span className="author-purpose-tag">
+                                {" · "}
+                                {post.purpose && PURPOSE_LABELS[post.purpose]?.icon}{" "}
+                                {post.purpose && PURPOSE_LABELS[post.purpose]?.text}
+                            </span>
+                        </strong>
+                        <span className="post-time">
+                            {new Date(post.created_at).toLocaleString()}
+                            {isUrgent && isAdmin && (
+                                <span className="time-urgent-label">
+                                    <HiExclamation /> Urgent
+                                </span>
+                            )}
+                        </span>
+                    </div>
+                </div>
+                <div className="post-header-right">
+                    <div className="post-meta">
+                        {isAdmin && post.status !== "resolved" && urgencyInfo && (
+                            <span className={`badge-urgency ${urgencyInfo.className}`}>
+                                {urgencyInfo.label}
+                            </span>
+                        )}
+                        {post.status && (
+                            <span className={`badge-status status-${post.status}`}>
+                                {STATUS_LABELS[post.status]}
                             </span>
                         )}
                     </div>
-                    <span className="text-xs text-gray-400">
-                        {new Date(post.created_at).toLocaleString()}
-                        {post.user?.barangay?.name && ` · ${post.user.barangay.name}`}
-                    </span>
-                </div>
-
-                {/* Status + urgency badges */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {isAdmin && urgencyInfo && post.status !== 'resolved' && (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${urgencyInfo.classes}`}>
-                            {urgencyInfo.label}
-                        </span>
-                    )}
-                    {statusInfo && (
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusInfo.classes}`}>
-                            {statusInfo.text}
-                        </span>
-                    )}
-                    {/* 3-dot menu */}
                     {canManage && (
-                        <div className="relative" ref={menuRef}>
-                            <button
-                                onClick={() => setShowPostMenu(!showPostMenu)}
-                                className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                ⋯
+                        <div className="post-menu-wrapper" ref={menuRef}>
+                            <button className="post-menu-btn" onClick={() => setShowPostMenu(!showPostMenu)}>
+                                <HiDotsVertical />
                             </button>
                             {showPostMenu && (
-                                <div className="animate-menu-fade-in absolute right-0 top-8 z-20 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-40">
-                                    <button
-                                        onClick={() => { setShowPostMenu(false); router.push(`/posts/${post.id}/edit`); }}
-                                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                    >
-                                        ✏️ Edit Post
+                                <div className="post-menu-dropdown">
+                                    <button onClick={() => { setShowPostMenu(false); router.push(`/posts/${post.id}/edit`); }}>
+                                        <HiPencil /> Edit Post
                                     </button>
-                                    <button
-                                        onClick={() => { setShowPostMenu(false); setShowDeleteModal(true); }}
-                                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                    >
-                                        🗑️ Delete Post
+                                    <button className="menu-danger" onClick={() => { setShowPostMenu(false); setShowDeleteModal(true); }}>
+                                        <HiTrash /> Delete Post
                                     </button>
                                 </div>
                             )}
@@ -334,157 +360,116 @@ export default function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
                 </div>
             </div>
 
-            {/* Body */}
-            <div className="px-4 pb-2">
-                {post.title && (
-                    <Link href={`/posts/${post.id}`} className="font-semibold text-gray-900 hover:text-blue-600 block mb-1">
-                        {post.title}
-                    </Link>
-                )}
-                {(post.body || post.description) && (
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                        {post.body ?? post.description}
-                    </p>
+            <div className="post-body">
+                <h3><Link href={`/posts/${post.id}`}>{post.title}</Link></h3>
+                <p style={{ whiteSpace: "pre-wrap" }}>{post.body || post.description}</p>
+                {post.image && (
+                    <div className="post-image-wrapper" onClick={() => setShowImageViewer(true)}>
+                        <img src={getStorageUrl(post.image)} alt="Post" className="post-image" />
+                    </div>
                 )}
             </div>
 
-            {/* Image */}
-            {post.image && (
-                <div className="cursor-zoom-in" onClick={() => setShowImage(true)}>
-                    <img
-                        src={post.image.startsWith('http') ? post.image : `/storage/${post.image}`}
-                        alt="Post"
-                        className="w-full object-cover max-h-96"
-                    />
-                </div>
-            )}
-
-            {/* Admin response */}
             {post.admin_response && (isOwner || isAdmin) && (
-                <div className="mx-4 my-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-blue-700 mb-1">🛡️ Admin Response</p>
-                    <p className="text-sm text-gray-700">{post.admin_response}</p>
+                <div className="admin-response">
+                    <strong><RiShieldStarFill /> Admin Response:</strong>
+                    <p>{post.admin_response}</p>
                 </div>
             )}
 
-            {/* Stats row */}
-            {(totalReactions > 0 || totalComments > 0) && (
-                <div className="flex items-center justify-between px-4 py-1.5 text-xs text-gray-400 border-t border-gray-50">
-                    {totalReactions > 0 ? (
-                        <div className="flex items-center gap-1">
-                            {Object.entries(reactions).map(([type, count]) =>
-                                count > 0 ? <span key={type}>{REACTION_CONFIG[type]?.emoji ?? '👍'} {count}</span> : null
-                            )}
-                        </div>
-                    ) : <span />}
-                    {totalComments > 0 && (
-                        <button onClick={() => setShowComment(true)} className="hover:text-blue-600 hover:underline">
-                            {totalComments} {totalComments === 1 ? 'comment' : 'comments'}
-                        </button>
-                    )}
+            {totalComments > 0 && (
+                <div className="post-stats-row">
+                    <span />
+                    <button className="comment-stat-count" onClick={() => setShowCommentModal(true)}>
+                        {totalComments} {totalComments === 1 ? "comment" : "comments"}
+                    </button>
                 </div>
             )}
 
-            {/* Action bar */}
-            <div className="flex items-center border-t border-gray-100 px-2 py-1">
-                {/* Reaction button with picker */}
-                <div className="relative flex-1">
+            <div className="post-action-bar">
+                <div className="action-bar-item reaction-trigger">
                     <button
-                        className={`w-full flex items-center justify-center gap-1.5 py-2 text-sm rounded-xl transition-colors hover:bg-gray-50 ${userReaction ? 'font-semibold' : 'text-gray-500'}`}
-                        style={currentReaction ? { color: currentReaction.color } : {}}
+                        className={`action-bar-btn ${userReaction ? "reacted" : ""}`}
+                        style={{ color: userReaction ? REACTION_CONFIG[userReaction]?.color : "inherit" }}
                         onClick={handleLikeClick}
-                        onMouseEnter={handleMouseEnterReaction}
-                        onMouseLeave={handleMouseLeaveReaction}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
                         onTouchStart={handlePressStart}
                         onTouchEnd={handlePressEnd}
                         onContextMenu={(e) => e.preventDefault()}
                     >
-                        <span>{currentReaction ? currentReaction.emoji : '👍'}</span>
-                        <span>{currentReaction ? currentReaction.label : 'Like'}</span>
+                        {userReaction ? (
+                            <span className="action-bar-emoji">
+                                {REACTION_CONFIG[userReaction].isGif ? (
+                                    <img src={REACTION_CONFIG[userReaction].emoji} alt="emoji" style={{ width: '18px', height: '18px' }} />
+                                ) : (
+                                    REACTION_CONFIG[userReaction].emoji
+                                )}
+                            </span>
+                        ) : (
+                            <HiOutlineThumbUp />
+                        )}
+                        <span style={userReaction ? { fontWeight: "700" } : {}}>
+                            {userReaction ? REACTION_CONFIG[userReaction].label : "Like"}
+                        </span>
                     </button>
 
-                    {/* Reaction picker popup */}
                     {showReactionPicker && (
-                        <div
-                            ref={pickerRef}
-                            className="animate-reaction-picker-pop absolute bottom-12 left-0 z-30 bg-white rounded-2xl shadow-xl border border-gray-100 px-3 py-2 flex items-center gap-1"
-                            onMouseEnter={() => clearTimeout(hoverTimeoutRef.current!)}
-                            onMouseLeave={handleMouseLeaveReaction}
-                        >
-                            {Object.entries(REACTION_CONFIG).map(([key, config]) => {
-                                const reactionAnimClass: Record<string, string> = {
-                                    Like: 'animate-react-like',
-                                    heart: 'animate-react-love',
-                                    support: 'animate-react-haha',
-                                    sad: 'animate-react-sad',
-                                };
-                                return (
-                                    <button
-                                        key={key}
-                                        data-reaction-type={key}
-                                        onClick={() => handleReact(key)}
-                                        onMouseEnter={() => setHovered(key)}
-                                        onMouseLeave={() => setHovered(null)}
-                                        className={`relative flex flex-col items-center p-1.5 rounded-xl transition-all ${hoveredReaction === key || userReaction === key ? 'scale-125' : 'hover:scale-110'}`}
-                                    >
-                                        {hoveredReaction === key && (
-                                            <span className="animate-tooltip-fade-in absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap">
-                                                {config.label}
-                                            </span>
-                                        )}
-                                        <span className={`text-2xl leading-none ${hoveredReaction === key ? reactionAnimClass[key] ?? 'animate-react-like' : ''}`}>
-                                            {config.emoji}
-                                        </span>
-                                    </button>
-                                );
-                            })}
+                        <div className="reaction-picker" ref={pickerRef} onMouseEnter={() => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current); }} onMouseLeave={handleMouseLeave}>
+                            {Object.entries(REACTION_CONFIG).map(([key, config]) => (
+                                <button
+                                    key={key}
+                                    data-type={key}
+                                    className={`reaction-picker-item reaction-${key} ${userReaction === key ? "active" : ""} ${hoveredReaction === key ? "hovered" : ""}`}
+                                    onClick={() => handleReact(key)}
+                                    onMouseEnter={() => setHoveredReaction(key)}
+                                    onMouseLeave={() => setHoveredReaction(null)}
+                                >
+                                    {hoveredReaction === key && <span className="reaction-tooltip">{config.label}</span>}
+                                    <span className="reaction-picker-emoji">
+                                        {config.isGif ? <img src={config.emoji} alt="" style={{ width: '24px', height: '24px' }} /> : config.emoji}
+                                    </span>
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>
 
-                {/* Comment button */}
-                <button
-                    onClick={() => setShowComment(true)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-sm text-gray-500 rounded-xl transition-colors hover:bg-gray-50"
-                >
-                    <span>💬</span><span>Comment</span>
-                </button>
-
-                {/* Share button + dropdown */}
-                <div
-                    className="relative flex-1"
-                    ref={shareRef}
-                    onMouseEnter={() => { clearTimeout(shareTimeoutRef.current!); setShowShareMenu(true); }}
-                    onMouseLeave={() => { shareTimeoutRef.current = setTimeout(() => setShowShareMenu(false), 300); }}
-                >
-                    <button className="w-full flex items-center justify-center gap-1.5 py-2 text-sm text-gray-500 rounded-xl transition-colors hover:bg-gray-50">
-                        <span>↗️</span><span>Share</span>
+                <div className="action-bar-item">
+                    <button className="action-bar-btn" onClick={() => setShowCommentModal(true)}>
+                        <HiChat /><span>Comment</span>
                     </button>
+                </div>
+
+                <div className="action-bar-item share-trigger" ref={shareRef} onMouseEnter={handleShareMouseEnter} onMouseLeave={handleShareMouseLeave}>
+                    <button className="action-bar-btn"><FaShare /><span>Share</span></button>
                     {showShareMenu && (
-                        <div className="animate-menu-fade-in absolute bottom-12 right-0 z-20 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-48">
-                            <button onClick={() => handleShare('copy')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">🔗 Copy Link</button>
-                            <button onClick={() => handleShare('facebook')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📘 Facebook</button>
-                            <button onClick={() => handleShare('messenger')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">💬 Messenger</button>
-                            <button onClick={() => handleShare('whatsapp')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📱 WhatsApp</button>
-                            <button onClick={() => handleShare('twitter')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">🐦 Twitter / X</button>
-                            {typeof navigator !== 'undefined' && 'share' in navigator && (
-                                <button onClick={() => handleShare('native')} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">⋯ More Options</button>
+                        <div className="share-dropdown">
+                            <button className="share-now-btn" onClick={handleSharePost}><FaShare /> Share now (Public)</button>
+                            <button onClick={() => handleShare("copy")}><HiLink /> Copy Link</button>
+                            <button onClick={() => handleShare("facebook")}><FaFacebookF /> Facebook</button>
+                            <button onClick={() => handleShare("messenger")}><FaFacebookMessenger /> Messenger</button>
+                            <button onClick={() => handleShare("whatsapp")}><FaWhatsapp /> WhatsApp</button>
+                            <button onClick={() => handleShare("twitter")}><FaTwitter /> Twitter / X</button>
+                            {typeof navigator !== "undefined" && typeof navigator.share === "function" && (
+                                <button onClick={() => handleShare("native")}><HiExternalLink /> More Options...</button>
                             )}
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Comment Modal */}
             <CommentModal
                 isOpen={showCommentModal}
-                onClose={() => setShowComment(false)}
+                onClose={() => setShowCommentModal(false)}
                 post={post}
-                reactionCounts={reactions}
-                onUpdate={(updatedPost) => { if (onUpdate) onUpdate(post.id, updatedPost); }}
+                user={user}
+                toast={{ success: showToast, error: (msg: string) => showToast(msg, 'error') }}
+                initialComments={post.comments || []}
+                reactionsSummary={post.reaction_counts || {}}
+                onUpdate={onUpdate}
             />
 
-            {/* Delete confirm */}
             <ConfirmModal
                 isOpen={showDeleteModal}
                 title="Delete Post"
@@ -495,26 +480,12 @@ export default function PostCard({ post, onUpdate, onDelete }: PostCardProps) {
                 onCancel={() => setShowDeleteModal(false)}
             />
 
-            {/* Image lightbox */}
-            {showImageViewer && post.image && typeof document !== 'undefined' && createPortal(
-                <div
-                    className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center cursor-zoom-out"
-                    onClick={() => setShowImage(false)}
-                >
-                    <button
-                        onClick={() => setShowImage(false)}
-                        className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
-                    >
-                        ✕
-                    </button>
-                    <img
-                        src={post.image.startsWith('http') ? post.image : `/storage/${post.image}`}
-                        alt="Post"
-                        className="max-w-full max-h-full object-contain rounded-lg"
-                        onClick={(e) => e.stopPropagation()}
-                    />
+            {showImageViewer && post.image && typeof document !== "undefined" && createPortal(
+                <div className="image-lightbox-overlay" onClick={() => setShowImageViewer(false)}>
+                    <button className="image-lightbox-close" onClick={() => setShowImageViewer(false)}><HiX /></button>
+                    <img src={getStorageUrl(post.image)} alt="Post" className="image-lightbox-img" onClick={(e) => e.stopPropagation()} />
                 </div>,
-                document.body
+                document.body,
             )}
         </div>
     );

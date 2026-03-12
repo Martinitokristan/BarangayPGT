@@ -1,203 +1,346 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import api from '@/lib/api';
-import { useToast } from '@/contexts/ToastContext';
-import ConfirmModal from '@/components/ui/ConfirmModal';
+import React, { useState, useEffect } from "react";
+import api, { getStorageUrl } from "@/lib/api";
+import { useToast } from "@/contexts/ToastContext";
+import {
+    HiCheckCircle,
+    HiXCircle,
+    HiIdentification,
+    HiPhone,
+    HiMail,
+    HiLocationMarker,
+    HiX,
+} from "react-icons/hi";
 
-interface User {
-    id: number; name: string; email: string; phone: string | null;
-    role: string; is_approved: boolean; created_at: string;
-    avatar: string | null; valid_id_path: string | null;
-    barangay?: { name: string }; purok_address?: string;
-}
-interface Barangay { id: number; name: string; }
-interface Lightbox { open: boolean; src: string; label: string; }
-
-const SELECT = 'border border-gray-200 rounded-xl px-3 py-2 text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500';
-
-export default function AdminUsersPage() {
+export default function AdminUsers() {
     const { showToast } = useToast();
-    const [users, setUsers] = useState<User[]>([]);
-    const [barangays, setBarangays] = useState<Barangay[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({ role: '', barangay_id: '', is_approved: '' });
-    const [expandedUser, setExpanded] = useState<number | null>(null);
-    const [lightbox, setLightbox] = useState<Lightbox>({ open: false, src: '', label: '' });
-    const [confirmTarget, setConfirmTarget] = useState<{ user: User; action: 'approve' | 'reject' } | null>(null);
-
-    const fetchUsers = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (filters.role) params.append('role', filters.role);
-            if (filters.barangay_id) params.append('barangay_id', filters.barangay_id);
-            if (filters.is_approved) params.append('is_approved', filters.is_approved);
-            const res = await api.get(`/admin/users?${params}`);
-            setUsers(res.data.data);
-        } catch { showToast('Failed to load users.', 'error'); }
-        finally { setLoading(false); }
-    }, [filters, showToast]);
+    const [filters, setFilters] = useState({
+        role: "",
+        barangay_id: "",
+        is_approved: "",
+    });
+    const [barangays, setBarangays] = useState<any[]>([]);
+    const [expandedUser, setExpandedUser] = useState<number | null>(null);
+    const [lightbox, setLightbox] = useState({
+        open: false,
+        src: "",
+        label: "",
+    });
 
     useEffect(() => {
         fetchUsers();
-        api.get('/barangays').then((res) => setBarangays(res.data)).catch(() => { });
-    }, [fetchUsers]);
+    }, [filters]);
 
-    const handleRoleChange = async (user: User, newRole: string) => {
+    useEffect(() => {
+        fetchBarangays();
+    }, []);
+
+    const fetchUsers = async () => {
+        setLoading(true);
         try {
-            await api.put(`/admin/users/${user.id}/role`, { role: newRole });
-            showToast(`Role updated to ${newRole}.`, 'success');
-            fetchUsers();
-        } catch { showToast('Failed to update role.', 'error'); }
+            const params = new URLSearchParams();
+            if (filters.role) params.append("role", filters.role);
+            if (filters.barangay_id)
+                params.append("barangay_id", filters.barangay_id);
+            if (filters.is_approved)
+                params.append("is_approved", filters.is_approved);
+
+            const res = await api.get(`/admin/users?${params}`);
+            setUsers(res.data.data);
+        } catch (error) {
+            showToast("Failed to load users", "error");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleConfirm = async () => {
-        if (!confirmTarget) return;
-        const { user, action } = confirmTarget;
+    const fetchBarangays = async () => {
         try {
-            if (action === 'approve') {
-                await api.post(`/admin/users/${user.id}/approve`);
-                showToast('User approved!', 'success');
-            } else {
-                await api.delete(`/admin/users/${user.id}/reject`);
-                showToast('User rejected and removed.', 'success');
-            }
+            const res = await api.get("/admin/barangays");
+            setBarangays(res.data);
+        } catch (error) {
+            showToast("Failed to load barangays", "error");
+        }
+    };
+
+    const handleRoleChange = async (user: any, newRole: string) => {
+        try {
+            await api.put(`/admin/users/${user.id}/role`, { role: newRole });
+            showToast(`User role updated to ${newRole}`, "success");
             fetchUsers();
-        } catch { showToast(`Failed to ${action} user.`, 'error'); }
-        setConfirmTarget(null);
+        } catch (error) {
+            showToast("Failed to update user role", "error");
+        }
+    };
+
+    const handleApprove = async (user: any) => {
+        if (!window.confirm(`Are you sure you want to approve ${user.name}?`))
+            return;
+        try {
+            await api.post(`/admin/users/${user.id}/approve`);
+            showToast("User approved!", "success");
+            fetchUsers();
+        } catch (error) {
+            showToast("Failed to approve user", "error");
+        }
+    };
+
+    const handleReject = async (user: any) => {
+        if (
+            !window.confirm(
+                `Are you sure you want to reject and delete ${user.name}?`,
+            )
+        )
+            return;
+        try {
+            await api.delete(`/admin/users/${user.id}/reject`);
+            showToast("User rejected and removed.", "success");
+            fetchUsers();
+        } catch (error) {
+            showToast("Failed to reject user", "error");
+        }
     };
 
     const formatPhone = (phone: string | null) => {
         if (!phone) return null;
-        return phone.startsWith('+') ? phone : `+63${phone.slice(1)}`;
+        return phone.startsWith("+") ? phone : `+63${phone.slice(1)}`;
     };
 
+    if (loading) {
+        return <div className="loading-spinner">Loading users...</div>;
+    }
+
     return (
-        <div>
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
-                <span className="text-sm text-gray-400">{users.length} users</span>
+        <div className="admin-users">
+            <div className="admin-users__header">
+                <h2>Users Management</h2>
+                <div className="admin-users__filters">
+                    <select
+                        value={filters.role}
+                        onChange={(e) =>
+                            setFilters({ ...filters, role: e.target.value })
+                        }
+                        className="form-select"
+                    >
+                        <option value="">All Roles</option>
+                        <option value="resident">Residents</option>
+                        <option value="admin">Admins</option>
+                    </select>
+
+                    <select
+                        value={filters.is_approved}
+                        onChange={(e) =>
+                            setFilters({
+                                ...filters,
+                                is_approved: e.target.value,
+                            })
+                        }
+                        className="form-select"
+                    >
+                        <option value="">All Statuses</option>
+                        <option value="1">Approved</option>
+                        <option value="0">Pending</option>
+                    </select>
+
+                    <select
+                        value={filters.barangay_id}
+                        onChange={(e) =>
+                            setFilters({
+                                ...filters,
+                                barangay_id: e.target.value,
+                            })
+                        }
+                        className="form-select"
+                    >
+                        <option value="">All Barangays</option>
+                        {barangays.map((b: any) => (
+                            <option key={b.id} value={b.id}>
+                                {b.name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3 mb-6">
-                <select value={filters.role} onChange={(e) => setFilters({ ...filters, role: e.target.value })} className={SELECT}>
-                    <option value="">All Roles</option>
-                    <option value="resident">Residents</option>
-                    <option value="admin">Admins</option>
-                </select>
-                <select value={filters.is_approved} onChange={(e) => setFilters({ ...filters, is_approved: e.target.value })} className={SELECT}>
-                    <option value="">All Statuses</option>
-                    <option value="1">Approved</option>
-                    <option value="0">Pending</option>
-                </select>
-                <select value={filters.barangay_id} onChange={(e) => setFilters({ ...filters, barangay_id: e.target.value })} className={SELECT}>
-                    <option value="">All Barangays</option>
-                    {barangays.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-            </div>
-
-            {loading ? (
-                <div className="text-center py-12 text-gray-400 text-sm">Loading users...</div>
-            ) : (
-                <div className="space-y-3">
-                    {users.length === 0 && (
-                        <div className="bg-white rounded-2xl border border-gray-100 py-12 text-center text-gray-400 text-sm">
-                            No users found matching the filters.
-                        </div>
-                    )}
-                    {users.map((user) => (
-                        <div key={user.id}
-                            className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${!user.is_approved ? 'border-amber-200' : 'border-gray-100'}`}>
-                            {/* Card top row */}
-                            <div className="flex items-center gap-3 p-4 cursor-pointer"
-                                onClick={() => setExpanded(expandedUser === user.id ? null : user.id)}>
-                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold flex-shrink-0">
-                                    {user.avatar ? <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                        : user.name?.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-900 text-sm">{user.name}</p>
-                                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${user.is_approved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                        {user.is_approved ? 'Approved' : 'Pending'}
+            {/* Card list (mobile-first, works on all sizes) */}
+            <div className="admin-users__list">
+                {users.map((user) => (
+                    <div
+                        key={user.email}
+                        className={`user-card ${!user.is_approved ? "user-card--pending" : ""}`}
+                    >
+                        <div
+                            className="user-card__top"
+                            onClick={() =>
+                                setExpandedUser(
+                                    expandedUser === user.email ? null : user.email,
+                                )
+                            }
+                        >
+                            <div className="user-card__avatar">
+                                {user.avatar ? (
+                                    <img src={getStorageUrl(user.avatar)} alt={user.name} />
+                                ) : (
+                                    <span>
+                                        {user.name?.charAt(0).toUpperCase()}
                                     </span>
-                                    <span className="text-gray-300">{expandedUser === user.id ? '▲' : '▼'}</span>
+                                )}
+                            </div>
+                            <div className="user-card__info">
+                                <div className="user-card__name">
+                                    {user.name}
+                                </div>
+                                <div className="user-card__email">
+                                    {user.email}
                                 </div>
                             </div>
+                            <div className="user-card__status">
+                                {user.is_approved ? (
+                                    <span className="badge badge-success">
+                                        Approved
+                                    </span>
+                                ) : (
+                                    <span className="badge badge-warning">
+                                        Pending
+                                    </span>
+                                )}
+                            </div>
+                        </div>
 
-                            {/* Expanded details */}
-                            {expandedUser === user.id && (
-                                <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50">
-                                    <div className="grid grid-cols-2 gap-3 text-sm">
-                                        <div><span className="text-xs text-gray-400">Phone</span><p className="text-gray-700">{formatPhone(user.phone) ?? 'No phone'}</p></div>
-                                        <div><span className="text-xs text-gray-400">Barangay</span><p className="text-gray-700">{user.barangay?.name ?? 'N/A'}{user.purok_address ? ` — ${user.purok_address}` : ''}</p></div>
-                                        <div><span className="text-xs text-gray-400">Joined</span><p className="text-gray-700">{new Date(user.created_at).toLocaleDateString()}</p></div>
-                                        <div>
-                                            <span className="text-xs text-gray-400 block mb-1">Role</span>
-                                            <select value={user.role} onChange={(e) => handleRoleChange(user, e.target.value)} className={`${SELECT} text-xs`}>
-                                                <option value="resident">Resident</option>
-                                                <option value="admin">Admin</option>
-                                            </select>
+                        {expandedUser === user.email && (
+                            <div className="user-card__details">
+                                <div className="user-card__detail-row">
+                                    <HiPhone className="user-card__icon" />
+                                    <span>
+                                        {formatPhone(user.phone) || "No phone"}
+                                    </span>
+                                </div>
+                                <div className="user-card__detail-row">
+                                    <HiLocationMarker className="user-card__icon" />
+                                    <span>
+                                        {user.barangay?.name || "N/A"}
+                                        {user.purok_address
+                                            ? ` — ${user.purok_address}`
+                                            : ""}
+                                    </span>
+                                </div>
+                                <div className="user-card__detail-row">
+                                    <HiMail className="user-card__icon" />
+                                    <span>
+                                        Joined{" "}
+                                        {new Date(
+                                            user.created_at,
+                                        ).toLocaleDateString()}
+                                    </span>
+                                </div>
+
+                                {/* Valid ID */}
+                                {user.valid_id_path && (
+                                    <div className="user-card__ids">
+                                        <HiIdentification className="user-card__icon" />
+                                        <div className="user-card__id-links">
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline"
+                                                onClick={() =>
+                                                    setLightbox({
+                                                        open: true,
+                                                        src: getStorageUrl(user.valid_id_path),
+                                                        label: `${user.name} — Valid ID`,
+                                                    })
+                                                }
+                                            >
+                                                View Valid ID
+                                            </button>
                                         </div>
                                     </div>
+                                )}
 
-                                    {/* Valid ID */}
-                                    {user.valid_id_path && (
-                                        <button onClick={() => setLightbox({ open: true, src: `/storage/${user.valid_id_path}`, label: `${user.name} — Valid ID` })}
-                                            className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                                            🪪 View Valid ID
-                                        </button>
-                                    )}
+                                {/* Role */}
+                                <div className="user-card__detail-row">
+                                    <span className="user-card__label">
+                                        Role:
+                                    </span>
+                                    <select
+                                        value={user.role}
+                                        onChange={(e) =>
+                                            handleRoleChange(
+                                                user,
+                                                e.target.value,
+                                            )
+                                        }
+                                        className="form-select form-select-sm"
+                                    >
+                                        <option value="resident">
+                                            Resident
+                                        </option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
 
-                                    {/* Approve / Reject actions */}
+                                {/* Actions */}
+                                <div className="user-card__actions">
                                     {!user.is_approved && (
-                                        <div className="flex gap-2 pt-1">
-                                            <button onClick={() => setConfirmTarget({ user, action: 'approve' })}
-                                                className="flex-1 py-2 bg-green-600 text-white text-xs font-semibold rounded-xl hover:bg-green-700 transition-colors">
-                                                ✅ Approve
+                                        <>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() =>
+                                                    handleApprove(user)
+                                                }
+                                            >
+                                                <HiCheckCircle /> Approve
                                             </button>
-                                            <button onClick={() => setConfirmTarget({ user, action: 'reject' })}
-                                                className="flex-1 py-2 bg-red-600 text-white text-xs font-semibold rounded-xl hover:bg-red-700 transition-colors">
-                                                ✕ Reject
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() =>
+                                                    handleReject(user)
+                                                }
+                                            >
+                                                <HiXCircle /> Reject
                                             </button>
-                                        </div>
+                                        </>
                                     )}
                                 </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
+                            </div>
+                        )}
+                    </div>
+                ))}
 
-            {/* Image lightbox */}
+                {users.length === 0 && (
+                    <div className="empty-state">
+                        No users found matching the filters.
+                    </div>
+                )}
+            </div>
+
+            {/* Photo Lightbox */}
             {lightbox.open && (
-                <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-                    onClick={() => setLightbox({ open: false, src: '', label: '' })}>
-                    <div className="max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
-                        <p className="text-white text-center text-sm mb-3">{lightbox.label}</p>
-                        <img src={lightbox.src} alt={lightbox.label} className="w-full rounded-xl max-h-[70vh] object-contain" />
-                        <button onClick={() => setLightbox({ open: false, src: '', label: '' })}
-                            className="mt-3 w-full py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 text-sm">Close</button>
+                <div
+                    className="lightbox-overlay"
+                    onClick={() =>
+                        setLightbox({ open: false, src: "", label: "" })
+                    }
+                >
+                    <div
+                        className="lightbox-content"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            className="lightbox-close"
+                            onClick={() =>
+                                setLightbox({ open: false, src: "", label: "" })
+                            }
+                        >
+                            <HiX />
+                        </button>
+                        <p className="lightbox-label">{lightbox.label}</p>
+                        <img src={lightbox.src} alt={lightbox.label} />
                     </div>
                 </div>
             )}
-
-            {/* Approve/Reject confirm */}
-            <ConfirmModal
-                isOpen={!!confirmTarget}
-                title={confirmTarget?.action === 'approve' ? 'Approve User' : 'Reject User'}
-                message={confirmTarget?.action === 'approve'
-                    ? `Are you sure you want to approve ${confirmTarget?.user.name}?`
-                    : `Are you sure you want to reject and permanently delete ${confirmTarget?.user.name}?`}
-                confirmText={confirmTarget?.action === 'approve' ? 'Approve' : 'Reject & Delete'}
-                variant={confirmTarget?.action === 'approve' ? 'primary' : 'danger'}
-                onConfirm={handleConfirm}
-                onCancel={() => setConfirmTarget(null)}
-            />
         </div>
     );
 }

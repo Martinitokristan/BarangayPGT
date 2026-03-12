@@ -1,0 +1,43 @@
+// ==========================================================
+// Alerts
+// ==========================================================
+
+.alert {
+    padding: $space-3 $space-4;
+    border-radius: $radius;
+    font-size: $font-size-sm;
+    font-weight: 500;
+    margin-bottom: $space-4;
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+
+    svg {
+        font-size: 1.2em;
+        flex-shrink: 0;
+    }
+}
+
+.alert-error {
+    background-color: $danger-light;
+    color: $danger;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.alert-warning {
+    background-color: $warning-light;
+    color: color-mix(in srgb, $warning, black 15%);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.alert-success {
+    background-color: $success-light;
+    color: $success;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.alert-info {
+    background-color: $info-light;
+    color: $info;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}

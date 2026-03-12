@@ -18,44 +18,80 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Provisions a local User record using the user data passed from the frontend
-     * after a successful Supabase Authentication sign-up.
+     * Step 1 of registration: validate, store files, save to pending_registrations
+     * and send a 6-digit OTP to the user's email.
+     * The actual User record is NOT created here — it is created in verifyRegistration()
+     * once the user proves ownership of their email address.
      */
-    public function provisionSupabaseUser(Request $request)
+    public function register(Request $request)
     {
         $request->validate([
-            'supabase_uid' => 'required|string|unique:users',
-            'email'        => 'required|string|email|max:255|unique:users',
             'name'         => 'required|string|max:255',
-            'phone'        => 'required|string|max:20',
+            'email'        => 'required|string|email|max:255|unique:users',
+            'password'     => 'required|string|min:8',
             'barangay_id'  => 'required|exists:barangays,id',
-            'address'      => 'required|string|max:255',
-            'purok_address'=> 'required|string|max:255',
+            'phone'        => 'required|string|max:20',
             'sex'          => 'required|in:male,female,other',
             'birth_date'   => 'required|date|before:today',
+            'age'          => 'nullable|integer|min:0|max:150',
+            'address'      => 'nullable|string|max:500',
+            'purok_address'=> 'nullable|string|max:255',
+            'id_front'     => 'required_without:valid_id|image|mimes:jpeg,png,jpg|max:5120',
+            'id_back'      => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'valid_id'     => 'required_without:id_front|image|mimes:jpeg,png,jpg|max:5120',
+            'device_token' => 'nullable|string|max:64',
         ]);
 
-        $birthDate = Carbon::parse($request->birth_date);
+        $birthDate     = Carbon::parse($request->birth_date);
+        $calculatedAge = $birthDate->age;
+        $otp           = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        $user = User::create([
-            'supabase_uid'  => $request->supabase_uid,
-            'email'         => $request->email,
-            'name'          => $request->name,
-            // Provide a random dummy password since auth is handled by Supabase
-            'password'      => Hash::make(bin2hex(random_bytes(16))),
-            'role'          => 'resident',
-            'barangay_id'   => $request->barangay_id,
-            'phone'         => $request->phone,
-            'purok_address' => $request->purok_address,
-            'sex'           => $request->sex,
-            'birth_date'    => $birthDate->toDateString(),
-            'age'           => $birthDate->age,
-            'is_approved'   => false,
+        // Map `valid_id` to `id_front` to support both old and new form styles temporarily.
+        $frontImage = $request->hasFile('valid_id') ? $request->file('valid_id') : $request->file('id_front');
+        if (!$frontImage) {
+            return response()->json(['message' => 'Please upload a valid ID.'], 422);
+        }
+
+        $idFrontPath = $frontImage->store('resident_ids_pending', 'public');
+        $idBackPath  = $request->hasFile('id_back') ? $request->file('id_back')->store('resident_ids_pending', 'public') : null;
+
+        $existing = PendingRegistration::where('email', $request->email)->first();
+        if ($existing) {
+            if ($existing->id_front_path) Storage::disk('public')->delete($existing->id_front_path);
+            if ($existing->id_back_path) Storage::disk('public')->delete($existing->id_back_path);
+            $existing->delete();
+        }
+
+        PendingRegistration::create([
+            'email'          => $request->email,
+            'name'           => $request->name,
+            'password'       => Hash::make($request->password),
+            'barangay_id'    => $request->barangay_id,
+            'phone'          => $request->phone,
+            'purok_address'  => $request->purok_address,
+            'sex'            => $request->sex,
+            'birth_date'     => $birthDate->toDateString(),
+            'age'            => $calculatedAge,
+            'valid_id_path'  => $idFrontPath,
+            'otp_code'       => $otp,
+            'otp_expires_at' => now()->addMinutes(15),
+            'device_token'   => $request->device_token,
         ]);
+
+        $verifyUrl = rtrim(config('app.url'), '/') . '/api/auth/register/confirm?email=' . urlencode($request->email) . '&code=' . $otp;
+
+        try {
+            (new BrevoApiMailer())->sendRegistrationLink($request->email, $request->name, $verifyUrl);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Registration link email failed', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
-            'message' => 'User provisioned successfully.',
-            'user'    => $user,
+            'message' => 'A 6-digit verification code has been sent to your email. Please enter it to complete registration.',
+            'email'   => $request->email,
         ], 201);
     }
 
@@ -91,87 +127,50 @@ class AuthController extends Controller
                 ->header('Content-Type', 'text/html');
         }
 
-        // Move ID photo from staging to permanent folder
-        $newValidIdPath = str_replace('resident_ids_pending/', 'resident_ids/', $pending->valid_id_path);
-        Storage::disk('public')->move($pending->valid_id_path, $newValidIdPath);
-
-        $user = User::create([
-            'name'              => $pending->name,
-            'email'             => $pending->email,
-            'password'          => $pending->password,
-            'role'              => 'resident',
-            'barangay_id'       => $pending->barangay_id,
-            'phone'             => $pending->phone,
-            'purok_address'     => $pending->purok_address,
-            'sex'               => $pending->sex,
-            'birth_date'        => $pending->birth_date,
-            'age'               => $pending->age,
-            'valid_id_path'     => $newValidIdPath,
-            'is_approved'       => false,
-            'email_verified_at' => now(),
-        ]);
-
-        if ($pending->device_token) {
-            $user->trustDevice($pending->device_token, $request);
-        }
-
-        $pending->delete();
-
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        // Store in cache — the SPA /register/poll endpoint picks this up
-        $cacheKey = 'reg_verified_' . md5(strtolower(trim($email)));
-        Cache::put($cacheKey, [
-            'token' => $token,
-            'user'  => $user->load('barangay')->toArray(),
-        ], now()->addMinutes(10));
+        // Mark as verified but DO NOT create User until admin approval
+        $pending->update(['email_verified_at' => now()]);
 
         return response($this->htmlPage(
             'Email Verified!',
             '#16a34a',
-            'Your email has been verified successfully. You can close this tab — the app is loading your account.'
+            'Your email has been verified successfully. You can close this tab — the app is now waiting for admin approval.'
         ), 200)->header('Content-Type', 'text/html');
     }
 
     /**
      * Step 2b — Polling endpoint called by the waiting SPA every few seconds.
-     * Returns {verified: true, token, user} once confirmRegistration() completes,
+     * Returns {verified: true, approved: true, token, user} once admin approves,
+     * {verified: true, approved: false} if email verified but waiting,
      * otherwise {verified: false}.
      */
     public function pollRegistrationStatus(Request $request)
     {
         $request->validate(['email' => 'required|email']);
 
-        $email    = strtolower(trim($request->email));
-        $cacheKey = 'reg_verified_' . md5($email);
-        $data     = Cache::get($cacheKey);
+        $email = strtolower(trim($request->email));
 
-        if ($data) {
-            // Primary path: cache hit from confirmRegistration
-            Cache::forget($cacheKey);
+        // 1. Check if the User has already been officially created (Admin approved)
+        $user = User::where('email', $email)->first();
+        if ($user) {
+            $token = $user->createToken('auth-token')->plainTextToken;
             return response()->json([
                 'verified' => true,
-                'token'    => $data['token'],
-                'user'     => $data['user'],
+                'approved' => true,
+                'token'    => $token,
+                'user'     => $user->load('barangay')->toArray(),
             ]);
         }
 
-        // Fallback: cache may have been missed (timing, process mismatch, etc.)
-        // If no pending row exists but a user does, confirmation already ran.
+        // 2. Check if still purely pending
         $pending = \App\Models\PendingRegistration::where('email', $email)->first();
-        if (!$pending) {
-            $user = User::where('email', $email)->first();
-            if ($user) {
-                $token = $user->createToken('auth-token')->plainTextToken;
-                return response()->json([
-                    'verified' => true,
-                    'token'    => $token,
-                    'user'     => $user->load('barangay')->toArray(),
-                ]);
-            }
+        if ($pending && $pending->email_verified_at) {
+            return response()->json([
+                'verified' => true,
+                'approved' => false,
+            ]);
         }
 
-        return response()->json(['verified' => false]);
+        return response()->json(['verified' => false, 'approved' => false]);
     }
 
     /** Small HTML page returned directly to the user's email browser/webview. */
@@ -281,9 +280,7 @@ HTML;
             'otp_expires_at' => now()->addMinutes(15),
         ]);
 
-        $verifyUrl = rtrim(config('app.url'), '/') . '/api/register/confirm'
-            . '?email=' . urlencode($pending->email)
-            . '&code=' . $otp;
+        $verifyUrl = rtrim(config('app.url'), '/') . '/api/auth/register/confirm?email=' . urlencode($pending->email) . '&code=' . $otp;
 
         try {
             (new BrevoApiMailer())->sendRegistrationLink($pending->email, $pending->name, $verifyUrl);
@@ -307,6 +304,24 @@ HTML;
         ]);
 
         if (!Auth::attempt($request->only('email', 'password'))) {
+            // Check if they are in pending_registrations
+            $pending = \App\Models\PendingRegistration::where('email', $request->email)->first();
+            if ($pending && Hash::check($request->password, $pending->password)) {
+                if ($pending->email_verified_at) {
+                    return response()->json([
+                        'status' => 'pending_approval',
+                        'email' => $pending->email,
+                        'message' => 'Your account is pending admin approval.'
+                    ], 403);
+                } else {
+                    return response()->json([
+                        'status' => 'unverified_email',
+                        'email' => $pending->email,
+                        'message' => 'Please verify your email address first.'
+                    ], 403);
+                }
+            }
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);

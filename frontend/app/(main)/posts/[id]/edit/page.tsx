@@ -1,5 +1,10 @@
 import EditPost from '@/components/posts/EditPost';
 
-export default function EditPostRoute() {
-    return <EditPost />;
+interface Props {
+    params: Promise<{ id: string }>;
+}
+
+export default async function EditPostRoute({ params }: Props) {
+    const { id } = await params;
+    return <EditPost postId={id} />;
 }

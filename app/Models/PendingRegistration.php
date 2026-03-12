@@ -20,15 +20,22 @@ class PendingRegistration extends Model
         'otp_code',
         'otp_expires_at',
         'device_token',
+        'email_verified_at',
     ];
 
     protected $casts = [
         'otp_expires_at' => 'datetime',
+        'email_verified_at' => 'datetime',
         'birth_date'     => 'date',
     ];
 
     public function isExpired(): bool
     {
         return $this->otp_expires_at->isPast();
+    }
+
+    public function barangay()
+    {
+        return $this->belongsTo(Barangay::class);
     }
 }
